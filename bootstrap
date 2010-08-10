@@ -1,0 +1,8 @@
+#! /bin/sh
+autoheader
+touch NEWS README AUTHORS ChangeLog
+touch stamp-h
+aclocal 
+automake --add-missing
+autoconf
+

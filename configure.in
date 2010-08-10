@@ -1,0 +1,58 @@
+AC_INIT(seqdraw, 1.0.0, http://emulex.co.com/)
+AC_CONFIG_SRCDIR(src/seqdraw.c)
+AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+AC_CONFIG_HEADERS(config.h)
+
+dnl ================ Check if this will be a windows build ==================
+case "${host}" in
+        i[[3456789]]86-*-mingw32*) WIN32="yes" ;;
+        *cygwin*) WIN32="yes" ;;
+        *) WIN32="no" ;;
+esac
+AM_CONDITIONAL([WIN32], test "$WIN32" = "yes")
+
+AH_TEMPLATE([IS_WIN32], [Set if the build is for windows.])
+AC_MSG_CHECKING([Checking build type])
+
+if test "x$WIN32" = xyes; then
+	AC_MSG_RESULT([Windows]) 
+	AC_DEFINE([IS_WIN32], [1], [Define if this is a windows build.])
+else
+	AC_MSG_RESULT([Linux]) 
+fi
+
+dnl ================ Standard tool setup =====================================
+dnl AM_PROG_LIBTOOL
+AC_ISC_POSIX
+AC_PROG_CC
+AM_PROG_CC_C_O
+AC_PROG_INSTALL
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+PKG_PROG_PKG_CONFIG(0.1)
+
+dnl ================ Default option variables to off =====================
+glib_has_strcmp0=no
+
+dnl ================ Check if glib version is high enough to support g_strcmp0 =====================
+AH_TEMPLATE([HAS_G_STRCMP0], [Set if the version of glib being used has a g_strcmp0 implementation])
+AC_MSG_CHECKING([for g_strcmp0 implentation])
+PKG_CHECK_EXISTS([glib-2.0 >= 2.16.0], glib_has_strcmp0=yes,)
+
+if test "x$glib_has_strcmp0" = xyes; then
+	AC_MSG_RESULT([glib supports g_strcmp0 function]) 
+	AC_DEFINE([HAS_G_STRCMP0], [1], [Define if g_strcmp0 exists.])
+else
+	AC_MSG_RESULT([glib doesn't support g_strcmp0 function]) 
+fi
+
+dnl ================ Ensure the libxml stuff we need exists =====================
+pkg_modules="libxml-2.0 >= 1.3.13 glib-2.0 >= 2.2.0 gobject-2.0 >= 2.2.0 cairo >= 1.5.0 pangocairo >= 1.20.0"
+PKG_CHECK_MODULES(REQMOD, [$pkg_modules])
+
+AC_SUBST(REQMOD_CFLAGS)
+AC_SUBST(REQMOD_LIBS)
+
+dnl ================ Generate the makefiles ===================================
+AC_OUTPUT([ Makefile src/Makefile ])
+

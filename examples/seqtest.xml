@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sqd:seqdraw xmlns:sqd="http://nottbergbros.com/seqdraw">
+    <sqd:config>
+    </sqd:config>
+    <sqd:sequence id="tc0044">
+        <sqd:name>SeqDraw Test Diagram -- Example 1</sqd:name>
+        <sqd:description>
+            This diagram is a test diagram to exercise the seqdraw capabilities. It is used to provide test 
+            excitation of the various rendering paths in the seqdraw executable.  I'm also trying to make 
+            this description text long enough so that it exercises the wrapping features in pango.
+        </sqd:description>
+        <sqd:actor-list>
+            <sqd:actor id="host" name="Host"/>
+            <sqd:actor id="firmware" name="Firmware"/>
+            <sqd:actor id="dma" name="DMA"/>
+            <sqd:actor id="port" name="Port"/>
+        </sqd:actor-list>
+        <sqd:event-list>
+            <sqd:slot>
+                <sqd:ext-to-event id="e12" actor="firmware" label="e12"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:event id="e1" start-actor="host" end-actor="firmware" top-label="e1"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:step-event id="e8" actor="firmware" label="Working..."/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:step-event id="e10" actor="host" label="e10"/>
+                <sqd:step-event id="e11" actor="dma" label="e11"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:event id="e2" start-actor="host" end-actor="port" top-label="e2"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:event id="e3" start-actor="port" end-actor="dma" top-label="e3"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:event id="e4" start-actor="port" end-actor="host" top-label="e4" bottom-label="Fred"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:event id="e5" start-actor="firmware" end-actor="host" top-label="e5"/>
+                <sqd:event id="e6" start-actor="port" end-actor="dma" bottom-label="e6"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:event id="e7" start-actor="port" end-actor="host" bottom-label="e7"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:step-event id="e9" actor="dma" label="e9"/>
+            </sqd:slot>
+            <sqd:slot>
+                <sqd:ext-from-event id="e13" actor="port" label="e13"/>
+            </sqd:slot>
+        </sqd:event-list>
+        <sqd:actor-region-list>
+            <sqd:actor-region id="reg1" refid="host" start-slot="1" end-slot="3"/>
+        </sqd:actor-region-list>
+        <sqd:box-region-list>
+            <sqd:box-region id="box1" start-actor="host" end-actor="port" start-slot="2" end-slot="4"/>
+        </sqd:box-region-list>
+        <sqd:note-list>
+            <sqd:note id="note1" reference="actor" refid="dma">
+                Test Note 1
+            </sqd:note>
+            <sqd:note id="note2" reference="event-start" refid="e2">
+                Kevin likes to put his notes over in a column on the side of the sequence diagram and then draw a line between
+                the note and the event of interest.
+            </sqd:note>
+            <sqd:note id="note3" reference="event-middle" refid="e3">
+                Test Note 3
+            </sqd:note>
+            <sqd:note id="note4" reference="event-end" refid="e4">
+                Test Note 4
+            </sqd:note>
+            <sqd:note id="note5">
+                Pure Note
+            </sqd:note>
+        </sqd:note-list>
+    </sqd:sequence>
+</sqd:seqdraw>
