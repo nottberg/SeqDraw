@@ -1430,15 +1430,23 @@ sqd_layout_draw_events( SQDLayout *sb )
                     cairo_set_source_rgb (priv->cr, 0, 0, 0);
                   
                     // Draw the Stem
-                    cairo_move_to (priv->cr, Event->StemBox.Start, Event->StemBox.Top);
-                    cairo_curve_to(priv->cr, Event->StemBox.End, Event->StemBox.Top, Event->StemBox.End, Event->StemBox.Bottom,
-                                                Event->StemBox.Start, Event->StemBox.Bottom);
+                    cairo_move_to (priv->cr, Event->StemBox.Start, Event->StemBox.Top + (priv->LineWidth/2.0));
+                    cairo_line_to(priv->cr, (Event->StemBox.Start + Event->StemBox.End)/2.0, Event->StemBox.Top + (priv->LineWidth/2.0));
+                    cairo_curve_to(priv->cr, Event->StemBox.End, Event->StemBox.Top + (priv->LineWidth/2.0), 
+                                             Event->StemBox.End, Event->StemBox.Bottom - (priv->LineWidth/2.0),
+                                             (Event->StemBox.Start + Event->StemBox.End)/2.0, Event->StemBox.Bottom - (priv->LineWidth/2.0));
+                    cairo_line_to(priv->cr, Event->StemBox.Start, Event->StemBox.Bottom - (priv->LineWidth/2.0));
+//                    cairo_line_to(priv->cr, Event->StemBox.End, (Event->StemBox.Top + Event->StemBox.Bottom)/2.0);
+//                    cairo_line_to(priv->cr, Event->StemBox.End, Event->StemBox.Top);
+//                    cairo_line_to(priv->cr, Event->StemBox.End, Event->StemBox.Top);
+//                    cairo_line_to(priv->cr, Event->StemBox.End, Event->StemBox.Top);
+
 
                     cairo_stroke (priv->cr);
 
-                    cairo_move_to (priv->cr, Event->StemBox.Start + priv->ArrowLength, Event->StemBox.Bottom + (priv->LineWidth/2.0) - (priv->ArrowWidth/2.0));
-                    cairo_line_to (priv->cr, Event->StemBox.Start, Event->StemBox.Bottom);
-                    cairo_line_to (priv->cr, Event->StemBox.Start + priv->ArrowLength, Event->StemBox.Bottom + (priv->LineWidth/2.0) + (priv->ArrowWidth/2.0));
+                    cairo_move_to (priv->cr, Event->StemBox.Start + priv->ArrowLength, Event->StemBox.Bottom - (priv->LineWidth/2.0) - (priv->ArrowWidth/2.0));
+                    cairo_line_to (priv->cr, Event->StemBox.Start, Event->StemBox.Bottom - (priv->LineWidth/2.0));
+                    cairo_line_to (priv->cr, Event->StemBox.Start + priv->ArrowLength, Event->StemBox.Bottom - (priv->LineWidth/2.0) + (priv->ArrowWidth/2.0));
 
                     cairo_stroke (priv->cr);
                 break;
