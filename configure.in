@@ -1,4 +1,4 @@
-AC_INIT(seqdraw, 1.0.0, http://emulex.co.com/)
+AC_INIT(seqdraw, 1.0.0, http://nottbergbros.com/)
 AC_CONFIG_SRCDIR(src/seqdraw.c)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
 AC_CONFIG_HEADERS(config.h)
