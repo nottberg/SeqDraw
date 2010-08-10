@@ -1,0 +1,4 @@
+A utility to convert an XML description of a sequence diagram into an actual sequence diagram.
+Utilizes the libxml library for XML/XPath parsing.
+Utilizes the cairo library for rendering of the sequence diagram.
+ 
