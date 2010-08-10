@@ -866,6 +866,8 @@ sqd_layout_arrange_events( SQDLayout *sb )
 
                 case ARROWDIR_STEP:
 
+                    EventMaxTextWidth =  (3.0*(priv->ActorWidth/4.0)) - (2 * priv->TextPad);
+
                     if( Event->UpperText.Str )
                     {
                         sqd_layout_measure_text(sb, &Event->UpperText, EventMaxTextWidth);
@@ -887,7 +889,7 @@ sqd_layout_arrange_events( SQDLayout *sb )
                     StartActor = g_ptr_array_index(priv->Actors, Event->StartActorIndx);
                     
                     Event->StemBox.Start   = StartActor->StemBox.Start + (priv->LineWidth*2);
-                    Event->StemBox.End     = StartActor->StemBox.Start + priv->ActorWidth/5.0;
+                    Event->StemBox.End     = StartActor->StemBox.Start + priv->ActorWidth/4.0;
                     
                     Event->EventBox.Top    = EventTop;
                     Event->EventBox.Start  = Event->StemBox.Start;
@@ -1425,19 +1427,6 @@ sqd_layout_draw_events( SQDLayout *sb )
 
                 case ARROWDIR_STEP:
 
-                    // Draw the boxes for debug
-                    cairo_set_source_rgba (priv->cr, 0.6, 0.2, 0.2, 0.7);
-                    cairo_rectangle(priv->cr, Event->EventBox.Start, Event->EventBox.Top, 
-                                             (Event->EventBox.End - Event->EventBox.Start), (Event->EventBox.Bottom - Event->EventBox.Top));
-     
-                    cairo_stroke (priv->cr);
-                                          
-                    cairo_set_source_rgba (priv->cr, 0.2, 0.6, 0.2, 0.7);
-                    cairo_rectangle(priv->cr, Event->StemBox.Start, Event->StemBox.Top, 
-                                             (Event->StemBox.End - Event->StemBox.Start), (Event->StemBox.Bottom - Event->StemBox.Top));
-
-                    cairo_stroke (priv->cr);
-
                     cairo_set_source_rgb (priv->cr, 0, 0, 0);
                   
                     // Draw the Stem
@@ -1447,9 +1436,9 @@ sqd_layout_draw_events( SQDLayout *sb )
 
                     cairo_stroke (priv->cr);
 
-                    cairo_move_to (priv->cr, Event->StemBox.End - priv->ArrowLength, Event->StemBox.Top + (priv->LineWidth/2.0) - (priv->ArrowWidth/2.0));
-                    cairo_line_to (priv->cr, Event->StemBox.End, Event->StemBox.Top + (priv->LineWidth/2.0));
-                    cairo_line_to (priv->cr, Event->StemBox.End - priv->ArrowLength, Event->StemBox.Top + (priv->LineWidth/2.0) + (priv->ArrowWidth/2.0));
+                    cairo_move_to (priv->cr, Event->StemBox.Start + priv->ArrowLength, Event->StemBox.Bottom + (priv->LineWidth/2.0) - (priv->ArrowWidth/2.0));
+                    cairo_line_to (priv->cr, Event->StemBox.Start, Event->StemBox.Bottom);
+                    cairo_line_to (priv->cr, Event->StemBox.Start + priv->ArrowLength, Event->StemBox.Bottom + (priv->LineWidth/2.0) + (priv->ArrowWidth/2.0));
 
                     cairo_stroke (priv->cr);
                 break;
