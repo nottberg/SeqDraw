@@ -376,6 +376,177 @@ parse_event_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
 	xmlXPathFreeContext( XPath );    
 }
 
+parse_actor_region_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
+{
+    xmlXPathContextPtr XPath;       
+    xmlChar           *idStr;
+    xmlNodeSetPtr      nodeset;  
+	xmlNodePtr         FNode;
+	xmlXPathObjectPtr  xpathlist;
+    guint32            NodeIndx;
+
+	// Build a context which XPath can reference from
+	XPath = xmlXPathNewContext( DocPtr );
+    XPath->node = SeqNode;
+    
+    // Add the namespaces of interest.
+    xmlXPathRegisterNs(XPath, "sqd", "http://nottbergbros.com/seqdraw");
+
+    // Sequence diagram description.
+    // Load Planned test cases from the expected file.
+    // Query for decoder definitions.
+	xpathlist = xmlXPathEvalExpression("sqd:actor-region-list/sqd:actor-region", XPath);
+
+    g_print( "query: 0x%x, %d\n", xpathlist, xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) );
+
+    // If nodes where found then parse them.
+	if( xpathlist && !xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) )
+	{
+   		nodeset = xpathlist->nodesetval; 
+	    g_print( "actor-region node count: %d\n", nodeset->nodeNr );    
+
+        // Cycle through the decoder specs
+		for (NodeIndx = 0; NodeIndx < nodeset->nodeNr; NodeIndx++)    
+		{
+            // <sqd:actor-region id="reg1" refid="host" start-event="e1" end-event="e3"/>
+
+            xmlChar           *idStr;
+            xmlChar           *RefId;
+            xmlChar           *StartEvent;
+            xmlChar           *EndEvent;
+
+		    // Get a pointer to the current node.
+		    FNode = nodeset->nodeTab[NodeIndx];
+
+            idStr = xmlGetProp(FNode,"id");
+            if(idStr == NULL)
+            {
+                g_error("Actor Region descriptions require a id property.\n");
+                return TRUE;
+            }
+            RefId = xmlGetProp(FNode,"refid");
+            if(RefId == NULL)
+            {
+                g_error("Actor Region descriptions require an actor 'refid' property.\n");
+                return TRUE;
+            }
+            StartEvent = xmlGetProp(FNode,"start-event");
+            if(StartEvent == NULL)
+            {
+                g_error("Actor Region descriptions require a 'start-event' property.\n");
+                return TRUE;
+            }
+            EndEvent = xmlGetProp(FNode,"end-event");
+            if(EndEvent == NULL)
+            {
+                g_error("Actor Region descriptions require a 'end-event' property.\n");
+                return TRUE;
+            }
+
+            sqd_layout_add_actor_region(SL, idStr, RefId, StartEvent, EndEvent);
+
+            if(idStr)      xmlFree(idStr);
+            if(RefId)      xmlFree(RefId);
+            if(StartEvent) xmlFree(StartEvent);
+            if(EndEvent)   xmlFree(EndEvent);
+		}
+
+        xmlFree(xpathlist);
+    }
+
+	// Free up the libxml structures.
+	xmlXPathFreeContext( XPath );    
+}
+
+parse_box_region_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
+{
+    xmlXPathContextPtr XPath;       
+    xmlChar           *idStr;
+    xmlNodeSetPtr      nodeset;  
+	xmlNodePtr         FNode;
+	xmlXPathObjectPtr  xpathlist;
+    guint32            NodeIndx;
+
+	// Build a context which XPath can reference from
+	XPath = xmlXPathNewContext( DocPtr );
+    XPath->node = SeqNode;
+    
+    // Add the namespaces of interest.
+    xmlXPathRegisterNs(XPath, "sqd", "http://nottbergbros.com/seqdraw");
+
+    // Sequence diagram description.
+    // Load Planned test cases from the expected file.
+    // Query for decoder definitions.
+	xpathlist = xmlXPathEvalExpression("sqd:box-region-list/sqd:box-region", XPath);
+
+    g_print( "query: 0x%x, %d\n", xpathlist, xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) );
+
+    // If nodes where found then parse them.
+	if( xpathlist && !xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) )
+	{
+   		nodeset = xpathlist->nodesetval; 
+	    g_print( "box-region node count: %d\n", nodeset->nodeNr );    
+
+        // Cycle through the decoder specs
+		for (NodeIndx = 0; NodeIndx < nodeset->nodeNr; NodeIndx++)    
+		{
+            // <sqd:box-region id="box1" start-actor="host" end-actor="port" start-event="e10" end-event="e6"/>
+            xmlChar           *idStr;
+            xmlChar           *StartActor;
+            xmlChar           *EndActor;
+            xmlChar           *StartEvent;
+            xmlChar           *EndEvent;
+
+		    // Get a pointer to the current node.
+		    FNode = nodeset->nodeTab[NodeIndx];
+
+            idStr = xmlGetProp(FNode,"id");
+            if(idStr == NULL)
+            {
+                g_error("Actor Region descriptions require a id property.\n");
+                return TRUE;
+            }
+            StartActor = xmlGetProp(FNode,"start-actor");
+            if(StartActor == NULL)
+            {
+                g_error("Actor Region descriptions requires a 'start-actor' property.\n");
+                return TRUE;
+            }
+            EndActor = xmlGetProp(FNode,"end-actor");
+            if(EndActor == NULL)
+            {
+                g_error("Actor Region descriptions requires a 'end-actor' property.\n");
+                return TRUE;
+            }
+            StartEvent = xmlGetProp(FNode,"start-event");
+            if(StartEvent == NULL)
+            {
+                g_error("Actor Region descriptions require a 'start-event' property.\n");
+                return TRUE;
+            }
+            EndEvent = xmlGetProp(FNode,"end-event");
+            if(EndEvent == NULL)
+            {
+                g_error("Actor Region descriptions require a 'end-event' property.\n");
+                return TRUE;
+            }
+
+            sqd_layout_add_box_region(SL, idStr, StartActor, EndActor, StartEvent, EndEvent);
+
+            if(idStr)      xmlFree(idStr);
+            if(StartActor) xmlFree(StartActor);
+            if(EndActor)   xmlFree(EndActor);
+            if(StartEvent) xmlFree(StartEvent);
+            if(EndEvent)   xmlFree(EndEvent);
+		}
+
+        xmlFree(xpathlist);
+    }
+
+	// Free up the libxml structures.
+	xmlXPathFreeContext( XPath );
+}
+
 parse_note_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
 {
     xmlXPathContextPtr XPath;       
@@ -610,6 +781,12 @@ main (int argc, char *argv[])
 
         // Parse the event nodes.
         parse_event_list( SL, SeqDoc, nodeset->nodeTab[0]);
+
+        // Parse the event nodes.
+        parse_actor_region_list( SL, SeqDoc, nodeset->nodeTab[0]);
+
+        // Parse the event nodes.
+        parse_box_region_list( SL, SeqDoc, nodeset->nodeTab[0]);
 
         // Parse the event nodes.
         parse_note_list( SL, SeqDoc, nodeset->nodeTab[0]);

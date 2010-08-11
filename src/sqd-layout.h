@@ -72,6 +72,11 @@ gboolean sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, 
 gboolean sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *ActorId, gchar *Label, gboolean FromFlag);
 
 gboolean sqd_layout_add_actor( SQDLayout *sb, char *IdStr, int ActorIndex, char *ActorTitle);
+
+gboolean sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar *StartEvent, gchar *EndEvent);
+
+gboolean sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar *EndActor, gchar *StartEvent, gchar *EndEvent);
+
 gboolean sqd_layout_add_note( SQDLayout *sb, char *IdStr, int NoteIndex, int NoteType, gchar *RefId, char *NoteText);
 
 gboolean sqd_layout_generate_pdf( SQDLayout *sb, gchar *FilePath );

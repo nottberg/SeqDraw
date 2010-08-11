@@ -64,6 +64,8 @@ enum SeqDrawObjectTypeEnum
     SDOBJ_ACTOR,
     SDOBJ_EVENT,
     SDOBJ_NOTE,
+    SDOBJ_AREGION,
+    SDOBJ_BREGION
 };
 
 typedef struct SeqDrawObjectHdr
@@ -135,6 +137,28 @@ typedef struct SeqDrawEventRecordLayer
     GList   *Events;
 }SQD_EVENT_LAYER;
 
+typedef struct SeqDrawActorRegionRecord
+{
+    SQD_OBJ hdr;
+
+    SQD_OBJ *ActorRef;
+    SQD_OBJ *SEventRef;
+    SQD_OBJ *EEventRef;
+
+    SQD_BOX BoundsBox;
+}SQD_ACTOR_REGION;
+
+typedef struct SeqDrawBoxRegionRecord
+{
+    SQD_OBJ hdr;
+
+    SQD_OBJ *SActorRef;
+    SQD_OBJ *EActorRef;
+    SQD_OBJ *SEventRef;
+    SQD_OBJ *EEventRef;
+
+    SQD_BOX BoundsBox;
+}SQD_BOX_REGION;
 
 typedef struct SeqDrawNoteRecord
 {
@@ -175,6 +199,8 @@ static void sqd_layout_draw_actors( SQDLayout *sb );
 static void sqd_layout_draw_events( SQDLayout *sb );
 static void sqd_layout_draw_notes( SQDLayout *sb );
 static void sqd_layout_draw_note_references( SQDLayout *sb );
+static void sqd_layout_draw_aregions( SQDLayout *sb );
+static void sqd_layout_draw_bregions( SQDLayout *sb );
 static int sqd_layout_draw_diagram( SQDLayout *sb );
 
 // Object start
@@ -227,6 +253,8 @@ struct _SQDLayoutPrivate
     // Actor, Event, Note Lists
     GPtrArray *Notes;
     GPtrArray *Actors;
+    GPtrArray *ActorRegions;
+    GPtrArray *BoxRegions;
     GArray *EventLayers;
 
     //GList  *Events;
@@ -363,6 +391,9 @@ sqd_layout_init (SQDLayout *sb)
 
     priv->MaxNoteIndex   = 0;
     priv->Notes = g_ptr_array_new();
+
+    priv->ActorRegions = g_ptr_array_new();
+    priv->BoxRegions   = g_ptr_array_new();
 
     priv->Title.Str       = NULL;
     priv->Description.Str = NULL;
@@ -771,6 +802,7 @@ sqd_layout_arrange_notes( SQDLayout *sb )
 }
 
 
+
 static int
 sqd_layout_arrange_events( SQDLayout *sb )
 {
@@ -1101,6 +1133,56 @@ sqd_layout_get_event_point( SQDLayout *sb, SQD_OBJ *RefObj, int RefType, double 
 }
 
 static double
+sqd_layout_arrange_aregions( SQDLayout *sb )
+{
+	SQDLayoutPrivate *priv;
+    SQD_ACTOR_REGION *AReg;
+    int i;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Determine the bounding boxes for each actor region.
+    for (i = 0; i < priv->ActorRegions->len; i++)
+    {
+        AReg = g_ptr_array_index(priv->ActorRegions, i);
+
+        AReg->BoundsBox.Top    = 0;
+        AReg->BoundsBox.Bottom = 50;
+        AReg->BoundsBox.Start  = 0;
+        AReg->BoundsBox.End    = 50;
+
+        debug_box_print("ARegion Box", &AReg->BoundsBox);
+    }
+
+    return 0;
+}
+
+static double
+sqd_layout_arrange_bregions( SQDLayout *sb )
+{
+	SQDLayoutPrivate *priv;
+    SQD_BOX_REGION   *BReg;
+    int i;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Determine the bounding boxes for each actor region.
+    for (i = 0; i < priv->BoxRegions->len; i++)
+    {
+        BReg = g_ptr_array_index(priv->BoxRegions, i);
+
+        BReg->BoundsBox.Top    = 60;
+        BReg->BoundsBox.Bottom = 110;
+        BReg->BoundsBox.Start  = 60;
+        BReg->BoundsBox.End    = 110;
+
+        debug_box_print("BRegion Box", &BReg->BoundsBox);
+    }
+
+    return 0;
+}
+
+static double
 sqd_layout_arrange_notes_references( SQDLayout *sb )
 {
 	SQDLayoutPrivate *priv;
@@ -1241,6 +1323,12 @@ sqd_layout_arrange_diagram( SQDLayout *sb )
         // Layout the events
         sqd_layout_arrange_events(sb);
 
+        // Layout the actor regions
+        sqd_layout_arrange_aregions(sb);
+
+        // Layout the box regions
+        sqd_layout_arrange_bregions(sb);
+
         // Layout the reference lines for notes.
         sqd_layout_arrange_notes_references(sb);
     }
@@ -1264,6 +1352,12 @@ sqd_layout_arrange_diagram( SQDLayout *sb )
 
         // Layout the events
         sqd_layout_arrange_events(sb);
+
+        // Layout the actor regions
+        sqd_layout_arrange_aregions(sb);
+
+        // Layout the box regions
+        sqd_layout_arrange_bregions(sb);
     }
 
 }
@@ -1436,11 +1530,6 @@ sqd_layout_draw_events( SQDLayout *sb )
                                              Event->StemBox.End, Event->StemBox.Bottom - (priv->LineWidth/2.0),
                                              (Event->StemBox.Start + Event->StemBox.End)/2.0, Event->StemBox.Bottom - (priv->LineWidth/2.0));
                     cairo_line_to(priv->cr, Event->StemBox.Start, Event->StemBox.Bottom - (priv->LineWidth/2.0));
-//                    cairo_line_to(priv->cr, Event->StemBox.End, (Event->StemBox.Top + Event->StemBox.Bottom)/2.0);
-//                    cairo_line_to(priv->cr, Event->StemBox.End, Event->StemBox.Top);
-//                    cairo_line_to(priv->cr, Event->StemBox.End, Event->StemBox.Top);
-//                    cairo_line_to(priv->cr, Event->StemBox.End, Event->StemBox.Top);
-
 
                     cairo_stroke (priv->cr);
 
@@ -1506,6 +1595,62 @@ sqd_layout_draw_events( SQDLayout *sb )
             Element = g_list_next(Element);
         } // Event Layout Loop
     } // Event Layer Loop 
+
+}
+
+static void
+sqd_layout_draw_aregions( SQDLayout *sb )
+{
+	SQDLayoutPrivate *priv;
+    SQD_ACTOR_REGION *AReg;
+    int i;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Draw each actor region box
+    for (i = 0; i <= priv->ActorRegions->len; i++)
+    {
+        AReg = g_ptr_array_index(priv->ActorRegions, i);
+
+        // Draw the Text bounding box.
+        cairo_set_source_rgba (priv->cr, 0.0, 0.5, 0.0, 0.5);
+
+        cairo_rectangle(priv->cr, AReg->BoundsBox.Start, AReg->BoundsBox.Top, 
+                            (AReg->BoundsBox.End - AReg->BoundsBox.Start),
+                            (AReg->BoundsBox.Bottom - AReg->BoundsBox.Top));
+
+        cairo_fill (priv->cr);
+
+        cairo_set_source_rgb (priv->cr, 0, 0, 0);
+    }
+
+}
+
+static void
+sqd_layout_draw_bregions( SQDLayout *sb )
+{
+	SQDLayoutPrivate *priv;
+    SQD_BOX_REGION   *BReg;
+    int i;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Draw each box region box
+    for (i = 0; i <= priv->BoxRegions->len; i++)
+    {
+        BReg = g_ptr_array_index(priv->BoxRegions, i);
+
+        // Draw the Text bounding box.
+        cairo_set_source_rgba (priv->cr, 0.0, 0.0, 0.5, 0.5);
+
+        cairo_rectangle(priv->cr, BReg->BoundsBox.Start, BReg->BoundsBox.Top, 
+                            (BReg->BoundsBox.End - BReg->BoundsBox.Start),
+                            (BReg->BoundsBox.Bottom - BReg->BoundsBox.Top));
+
+        cairo_fill (priv->cr);
+
+        cairo_set_source_rgb (priv->cr, 0, 0, 0);
+    }
 
 }
 
@@ -1637,6 +1782,10 @@ sqd_layout_draw_diagram( SQDLayout *sb )
     sqd_layout_draw_events(sb);
 
     sqd_layout_draw_notes(sb);
+
+    sqd_layout_draw_aregions(sb);
+
+    sqd_layout_draw_bregions(sb);
 
     sqd_layout_draw_note_references(sb);
 
@@ -2025,6 +2174,121 @@ sqd_layout_add_actor( SQDLayout *sb, gchar *IdStr, int ActorIndex, char *ActorTi
     // Add this object to the ID hash table.
     g_hash_table_insert( priv->IdTable, TmpActor->hdr.IdStr, TmpActor );
     g_print("Actor Insert: 0x%x, %d, %d, %s\n", TmpActor, TmpActor->hdr.Index, TmpActor->hdr.Type, TmpActor->hdr.IdStr); 
+}
+
+gboolean
+sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar *StartEvent, gchar *EndEvent )
+{
+	SQDLayoutPrivate *priv;
+    SQD_ACTOR_REGION *TmpRegion;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    TmpRegion = malloc( sizeof(SQD_ACTOR_REGION) );
+
+    // Make sure the ID isn't already in use
+    if( g_hash_table_lookup(priv->IdTable, IdStr) != NULL )
+    {
+        g_error("Sequence object id \"%s\" already exists. Ids must be unique.\n", IdStr);
+        return TRUE;
+    }
+
+    TmpRegion->hdr.Index = 0;
+    TmpRegion->hdr.Type  = SDOBJ_AREGION;
+    TmpRegion->hdr.IdStr = g_strdup(IdStr);
+
+    TmpRegion->ActorRef = g_hash_table_lookup(priv->IdTable, ActorId);
+    if( TmpRegion->ActorRef == NULL )
+    {
+        g_error("Reference to actor with id \"%s\" was not found.\n", ActorId);
+        return TRUE;
+    }
+
+    TmpRegion->SEventRef = g_hash_table_lookup(priv->IdTable, StartEvent);
+    if( TmpRegion->SEventRef == NULL )
+    {
+        g_error("Reference to start event with id \"%s\" was not found.\n", StartEvent);
+        return TRUE;
+    }
+
+    TmpRegion->EEventRef = g_hash_table_lookup(priv->IdTable, EndEvent);
+    if( TmpRegion->EEventRef == NULL )
+    {
+        g_error("Reference to end event with id \"%s\" was not found.\n", EndEvent);
+        return TRUE;
+    }
+
+    TmpRegion->BoundsBox.Top     = 0;
+    TmpRegion->BoundsBox.Bottom  = 0;
+    TmpRegion->BoundsBox.Start   = 0;
+    TmpRegion->BoundsBox.End     = 0;
+
+    g_ptr_array_add(priv->ActorRegions, TmpRegion); 
+
+    // Add this object to the ID hash table.
+    g_hash_table_insert( priv->IdTable, TmpRegion->hdr.IdStr, TmpRegion );
+    g_print("Actor-Region Insert: 0x%x, %d, %d, %s\n", TmpRegion, TmpRegion->hdr.Index, TmpRegion->hdr.Type, TmpRegion->hdr.IdStr); 
+}
+
+gboolean
+sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar *EndActor, gchar *StartEvent, gchar *EndEvent)
+{
+	SQDLayoutPrivate *priv;
+    SQD_BOX_REGION *TmpRegion;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    TmpRegion = malloc( sizeof(SQD_BOX_REGION) );
+
+    // Make sure the ID isn't already in use
+    if( g_hash_table_lookup(priv->IdTable, IdStr) != NULL )
+    {
+        g_error("Sequence object id \"%s\" already exists. Ids must be unique.\n", IdStr);
+        return TRUE;
+    }
+
+    TmpRegion->hdr.Index = 0;
+    TmpRegion->hdr.Type  = SDOBJ_BREGION;
+    TmpRegion->hdr.IdStr = g_strdup(IdStr);
+
+    TmpRegion->SActorRef = g_hash_table_lookup(priv->IdTable, StartActor);
+    if( TmpRegion->SActorRef == NULL )
+    {
+        g_error("Reference to start actor with id \"%s\" was not found.\n", StartActor);
+        return TRUE;
+    }
+
+    TmpRegion->EActorRef = g_hash_table_lookup(priv->IdTable, EndActor);
+    if( TmpRegion->EActorRef == NULL )
+    {
+        g_error("Reference to end actor with id \"%s\" was not found.\n", EndActor);
+        return TRUE;
+    }
+
+    TmpRegion->SEventRef = g_hash_table_lookup(priv->IdTable, StartEvent);
+    if( TmpRegion->SEventRef == NULL )
+    {
+        g_error("Reference to start event with id \"%s\" was not found.\n", StartEvent);
+        return TRUE;
+    }
+
+    TmpRegion->EEventRef = g_hash_table_lookup(priv->IdTable, EndEvent);
+    if( TmpRegion->EEventRef == NULL )
+    {
+        g_error("Reference to end event with id \"%s\" was not found.\n", EndEvent);
+        return TRUE;
+    }
+
+    TmpRegion->BoundsBox.Top     = 0;
+    TmpRegion->BoundsBox.Bottom  = 0;
+    TmpRegion->BoundsBox.Start   = 0;
+    TmpRegion->BoundsBox.End     = 0;
+
+    g_ptr_array_add(priv->BoxRegions, TmpRegion); 
+
+    // Add this object to the ID hash table.
+    g_hash_table_insert( priv->IdTable, TmpRegion->hdr.IdStr, TmpRegion );
+    g_print("Box-Region Insert: 0x%x, %d, %d, %s\n", TmpRegion, TmpRegion->hdr.Index, TmpRegion->hdr.Type, TmpRegion->hdr.IdStr); 
 }
 
 gboolean
