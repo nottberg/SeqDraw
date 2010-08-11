@@ -500,7 +500,29 @@ draw_text (cairo_t *cr)
   g_object_unref (layout);
 }
 
+static void
+sqd_layout_draw_rounded_rec( SQDLayout *sb, gdouble x, gdouble y, gdouble w, gdouble h, gdouble r)
+{
+	SQDLayoutPrivate *priv;
 
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // "Draw a rounded rectangle"
+    //   A****BQ
+    //  H      C
+    //  *      *
+    //  G      D
+    //   F****E
+    cairo_move_to(priv->cr, x+r,y);                     // Move to A
+    cairo_line_to(priv->cr,x+w-r,y);                    // Straight line to B
+    cairo_curve_to(priv->cr,x+w,y,x+w,y,x+w,y+r);       // Curve to C, Control points are both at Q
+    cairo_line_to(priv->cr,x+w,y+h-r);                  // Move to D
+    cairo_curve_to(priv->cr,x+w,y+h,x+w,y+h,x+w-r,y+h); // Curve to E
+    cairo_line_to(priv->cr,x+r,y+h);                    // Line to F
+    cairo_curve_to(priv->cr,x,y+h,x,y+h,x,y+h-r);       // Curve to G
+    cairo_line_to(priv->cr,x,y+r);                      // Line to H
+    cairo_curve_to(priv->cr,x,y,x,y,x+r,y);             // Curve to A
+}
 
 static void
 sqd_layout_draw_actor ( SQDLayout *sb, int ActorIndex, char *ActorTitle)
@@ -512,7 +534,7 @@ sqd_layout_draw_actor ( SQDLayout *sb, int ActorIndex, char *ActorTitle)
   int pwidth, pheight;
   double cwidth, cheight;
 
-	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+  priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
   /* Center coordinates on the middle of the region we are drawing
    */
@@ -1615,6 +1637,10 @@ sqd_layout_draw_aregions( SQDLayout *sb )
         // Draw the Text bounding box.
         cairo_set_source_rgba (priv->cr, 0.0, 0.5, 0.0, 0.5);
 
+//        sqd_layout_draw_rounded_rec(sb, AReg->BoundsBox.Start, AReg->BoundsBox.Top, 
+//                            (AReg->BoundsBox.End - AReg->BoundsBox.Start),
+//                            (AReg->BoundsBox.Bottom - AReg->BoundsBox.Top), 10);
+
         cairo_rectangle(priv->cr, AReg->BoundsBox.Start, AReg->BoundsBox.Top, 
                             (AReg->BoundsBox.End - AReg->BoundsBox.Start),
                             (AReg->BoundsBox.Bottom - AReg->BoundsBox.Top));
@@ -1643,9 +1669,13 @@ sqd_layout_draw_bregions( SQDLayout *sb )
         // Draw the Text bounding box.
         cairo_set_source_rgba (priv->cr, 0.0, 0.0, 0.5, 0.5);
 
-        cairo_rectangle(priv->cr, BReg->BoundsBox.Start, BReg->BoundsBox.Top, 
+        sqd_layout_draw_rounded_rec(sb, BReg->BoundsBox.Start, BReg->BoundsBox.Top, 
                             (BReg->BoundsBox.End - BReg->BoundsBox.Start),
-                            (BReg->BoundsBox.Bottom - BReg->BoundsBox.Top));
+                            (BReg->BoundsBox.Bottom - BReg->BoundsBox.Top), 10);
+
+        //cairo_rectangle(priv->cr, BReg->BoundsBox.Start, BReg->BoundsBox.Top, 
+        //                    (BReg->BoundsBox.End - BReg->BoundsBox.Start),
+        //                    (BReg->BoundsBox.Bottom - BReg->BoundsBox.Top));
 
         cairo_fill (priv->cr);
 
