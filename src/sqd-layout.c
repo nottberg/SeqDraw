@@ -141,9 +141,9 @@ typedef struct SeqDrawActorRegionRecord
 {
     SQD_OBJ hdr;
 
-    SQD_OBJ *ActorRef;
-    SQD_OBJ *SEventRef;
-    SQD_OBJ *EEventRef;
+    SQD_ACTOR *ActorRef;
+    SQD_EVENT *SEventRef;
+    SQD_EVENT *EEventRef;
 
     SQD_BOX BoundsBox;
 }SQD_ACTOR_REGION;
@@ -152,10 +152,10 @@ typedef struct SeqDrawBoxRegionRecord
 {
     SQD_OBJ hdr;
 
-    SQD_OBJ *SActorRef;
-    SQD_OBJ *EActorRef;
-    SQD_OBJ *SEventRef;
-    SQD_OBJ *EEventRef;
+    SQD_ACTOR *SActorRef;
+    SQD_ACTOR *EActorRef;
+    SQD_EVENT *SEventRef;
+    SQD_EVENT *EEventRef;
 
     SQD_BOX BoundsBox;
 }SQD_BOX_REGION;
@@ -1154,11 +1154,12 @@ sqd_layout_get_event_point( SQDLayout *sb, SQD_OBJ *RefObj, int RefType, double 
     } // Ref Type switch
 }
 
-static double
+static gboolean
 sqd_layout_arrange_aregions( SQDLayout *sb )
 {
 	SQDLayoutPrivate *priv;
     SQD_ACTOR_REGION *AReg;
+
     int i;
 
 	priv = SQD_LAYOUT_GET_PRIVATE (sb);
@@ -1168,18 +1169,25 @@ sqd_layout_arrange_aregions( SQDLayout *sb )
     {
         AReg = g_ptr_array_index(priv->ActorRegions, i);
 
-        AReg->BoundsBox.Top    = 0;
-        AReg->BoundsBox.Bottom = 50;
-        AReg->BoundsBox.Start  = 0;
-        AReg->BoundsBox.End    = 50;
+        if( AReg->SEventRef->StemBox.Top >= AReg->EEventRef->StemBox.Bottom )
+        {
+            g_error("The start event must proceed the end event in an actor region. (failing id '%s'", AReg->hdr.IdStr);
+            return TRUE;
+        }
+
+        AReg->BoundsBox.Top    = (AReg->SEventRef->StemBox.Top + AReg->SEventRef->StemBox.Bottom)/2.0;
+        AReg->BoundsBox.Bottom = (AReg->EEventRef->StemBox.Top + AReg->EEventRef->StemBox.Bottom)/2.0;
+
+        AReg->BoundsBox.Start  = AReg->ActorRef->StemBox.Start + (priv->LineWidth/2.0) - (2.0*priv->LineWidth);
+        AReg->BoundsBox.End    = AReg->ActorRef->StemBox.Start + (priv->LineWidth/2.0) + (2.0*priv->LineWidth);
 
         debug_box_print("ARegion Box", &AReg->BoundsBox);
     }
 
-    return 0;
+    return FALSE;
 }
 
-static double
+static gboolean
 sqd_layout_arrange_bregions( SQDLayout *sb )
 {
 	SQDLayoutPrivate *priv;
@@ -1193,10 +1201,23 @@ sqd_layout_arrange_bregions( SQDLayout *sb )
     {
         BReg = g_ptr_array_index(priv->BoxRegions, i);
 
-        BReg->BoundsBox.Top    = 60;
-        BReg->BoundsBox.Bottom = 110;
-        BReg->BoundsBox.Start  = 60;
-        BReg->BoundsBox.End    = 110;
+        if( BReg->SEventRef->EventBox.Top >= BReg->EEventRef->EventBox.Bottom )
+        {
+            g_error("The start event must proceed the end event in a box region. (failing id '%s'", BReg->hdr.IdStr);
+            return TRUE;
+        }
+
+        BReg->BoundsBox.Top    = BReg->SEventRef->EventBox.Top;
+        BReg->BoundsBox.Bottom = BReg->EEventRef->EventBox.Bottom;
+
+        if( BReg->SActorRef->BoundsBox.Top >= BReg->EActorRef->BoundsBox.Bottom )
+        {
+            g_error("The start actor must be to the right of the end actor in a box region. (failing id '%s'", BReg->hdr.IdStr);
+            return TRUE;
+        }
+
+        BReg->BoundsBox.Start  = BReg->SActorRef->BoundsBox.Start;
+        BReg->BoundsBox.End    = BReg->EActorRef->BoundsBox.End;
 
         debug_box_print("BRegion Box", &BReg->BoundsBox);
     }
@@ -2228,21 +2249,21 @@ sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar
     TmpRegion->hdr.IdStr = g_strdup(IdStr);
 
     TmpRegion->ActorRef = g_hash_table_lookup(priv->IdTable, ActorId);
-    if( TmpRegion->ActorRef == NULL )
+    if( (TmpRegion->ActorRef == NULL) || (TmpRegion->ActorRef->hdr.Type != SDOBJ_ACTOR) )
     {
         g_error("Reference to actor with id \"%s\" was not found.\n", ActorId);
         return TRUE;
     }
 
     TmpRegion->SEventRef = g_hash_table_lookup(priv->IdTable, StartEvent);
-    if( TmpRegion->SEventRef == NULL )
+    if( (TmpRegion->SEventRef == NULL) || (TmpRegion->SEventRef->hdr.Type != SDOBJ_EVENT) )
     {
         g_error("Reference to start event with id \"%s\" was not found.\n", StartEvent);
         return TRUE;
     }
 
     TmpRegion->EEventRef = g_hash_table_lookup(priv->IdTable, EndEvent);
-    if( TmpRegion->EEventRef == NULL )
+    if( (TmpRegion->EEventRef == NULL) || (TmpRegion->EEventRef->hdr.Type != SDOBJ_EVENT) )
     {
         g_error("Reference to end event with id \"%s\" was not found.\n", EndEvent);
         return TRUE;
@@ -2282,28 +2303,28 @@ sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar
     TmpRegion->hdr.IdStr = g_strdup(IdStr);
 
     TmpRegion->SActorRef = g_hash_table_lookup(priv->IdTable, StartActor);
-    if( TmpRegion->SActorRef == NULL )
+    if( (TmpRegion->SActorRef == NULL) || (TmpRegion->SActorRef->hdr.Type != SDOBJ_ACTOR) )
     {
         g_error("Reference to start actor with id \"%s\" was not found.\n", StartActor);
         return TRUE;
     }
 
     TmpRegion->EActorRef = g_hash_table_lookup(priv->IdTable, EndActor);
-    if( TmpRegion->EActorRef == NULL )
+    if( (TmpRegion->EActorRef == NULL) || (TmpRegion->EActorRef->hdr.Type != SDOBJ_ACTOR) )
     {
         g_error("Reference to end actor with id \"%s\" was not found.\n", EndActor);
         return TRUE;
     }
 
     TmpRegion->SEventRef = g_hash_table_lookup(priv->IdTable, StartEvent);
-    if( TmpRegion->SEventRef == NULL )
+    if( (TmpRegion->SEventRef == NULL) || (TmpRegion->SEventRef->hdr.Type != SDOBJ_EVENT) )
     {
         g_error("Reference to start event with id \"%s\" was not found.\n", StartEvent);
         return TRUE;
     }
 
     TmpRegion->EEventRef = g_hash_table_lookup(priv->IdTable, EndEvent);
-    if( TmpRegion->EEventRef == NULL )
+    if( (TmpRegion->EEventRef == NULL) || (TmpRegion->EEventRef->hdr.Type != SDOBJ_EVENT) )
     {
         g_error("Reference to end event with id \"%s\" was not found.\n", EndEvent);
         return TRUE;

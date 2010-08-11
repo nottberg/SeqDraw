@@ -53,10 +53,10 @@
             </sqd:slot>
         </sqd:event-list>
         <sqd:actor-region-list>
-            <sqd:actor-region id="reg1" refid="host" start-event="e1" end-event="e3"/>
+            <sqd:actor-region id="reg1" refid="host" start-event="e1" end-event="e4"/>
         </sqd:actor-region-list>
         <sqd:box-region-list>
-            <sqd:box-region id="box1" start-actor="host" end-actor="port" start-event="e10" end-event="e6"/>
+            <sqd:box-region id="box1" start-actor="firmware" end-actor="dma" start-event="e6" end-event="e13"/>
         </sqd:box-region-list>
         <sqd:note-list>
             <sqd:note id="note1" reference="actor" refid="dma">
