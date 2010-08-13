@@ -51,6 +51,14 @@ typedef struct SDPresentationParameter
     gchar *ValueStr;
 }SQD_P_PARAM;
 
+typedef struct SDColorStruct
+{
+    gdouble  Red;
+    gdouble  Green;
+    gdouble  Blue;
+    gdouble  Alpha;
+}SQD_COLOR;
+
 typedef struct SeqDrawBox
 {
     double Top;
@@ -278,6 +286,13 @@ struct _SQDLayoutPrivate
     // Keep a hash table of presentation parameters
     GHashTable *PTable;
 
+    // Presentation Parameters 
+    gchar       *FontStr;
+
+    SQD_COLOR   TextColor;
+    SQD_COLOR   LineColor;
+    SQD_COLOR   FillColor;
+    SQD_COLOR   StemColor;
 };
 
 /* GObject callbacks */
@@ -421,8 +436,15 @@ sqd_layout_init (SQDLayout *sb)
     priv->dispose_has_run = FALSE;
 
     sqd_layout_set_presentation_parameter(sb, "font", "Times 10", NULL);
-    //sqd_layout_set_presentation_parameter(sb, "font", "Courier 10", NULL);
-    //sqd_layout_set_presentation_parameter(sb, "font", "Impact 10", NULL);
+    sqd_layout_set_presentation_parameter(sb, "description.font", "Courier 8", NULL);
+    sqd_layout_set_presentation_parameter(sb, "title.font", "Impact 10", NULL);
+
+    //sqd_layout_set_presentation_parameter(sb, "text.color", "0,0,0,255", NULL);
+    sqd_layout_set_presentation_parameter(sb, "text.color", "95,158,160,255", NULL);
+    sqd_layout_set_presentation_parameter(sb, "line.color", "0,0,0,255", NULL);
+    sqd_layout_set_presentation_parameter(sb, "fill.color", "255,228,196,255", NULL);
+
+    sqd_layout_set_presentation_parameter(sb, "actor.stem.color", "128,128,128,128", NULL);
 
 }
 
@@ -466,6 +488,295 @@ sqd_layout_get_pparam( SQDLayout *sb, gchar *ParamStr, gchar *ClassStr )
     return NULL;
 }
 
+static gboolean
+sqd_layout_process_color_str( SQDLayout *sb, gchar *ColorStr, SQD_COLOR *Color )
+{
+    gdouble R;
+    gdouble G;
+    gdouble B;
+    gdouble A;
+    gchar   **TList;
+
+    // Default the color to opaque black
+    Color->Red   = 0;
+    Color->Green = 0;
+    Color->Blue  = 0;
+    Color->Alpha = 1.0;
+
+    // Attempt to decode the string.
+    TList = g_strsplit(ColorStr, ",", 4);
+
+    // Decode the Red Value
+    if(TList[0] == NULL)
+        return TRUE;
+    R = strtol(TList[0], NULL, 0);
+    if( (R > 255.0) || (R < 0.0) ) return TRUE;
+    R /= 255.0;
+
+    // Decode the Green Value
+    if(TList[1] == NULL)
+        return TRUE;
+    G = strtol(TList[1], NULL, 0);
+    if( (G > 255.0) || (G < 0.0) ) return TRUE;
+    G /= 255.0;
+
+    // Decode the Blue Value
+    if(TList[2] == NULL)
+        return TRUE;
+    B = strtol(TList[2], NULL, 0);
+    if( (B > 255.0) || (B < 0.0) ) return TRUE;
+    B /= 255.0;
+
+    // Decode the alpha value
+    if(TList[3] == NULL)
+        return TRUE;
+    A = strtol(TList[3], NULL, 0);
+    if( (A > 255.0) || (A < 0.0) ) return TRUE;
+    A /= 255.0;
+
+    // Free the tokens
+    g_strfreev(TList);
+
+    g_print("RGBA: %g, %g, %g, %g\n", R, G, B, A);
+
+    // Default the color to opaque black
+    Color->Red   = R;
+    Color->Green = G;
+    Color->Blue  = B;
+    Color->Alpha = A;
+
+    // Done
+    return FALSE;
+
+}
+
+static void
+sqd_layout_use_default_presentation( SQDLayout *sb )
+{
+	SQDLayoutPrivate *priv;
+    gchar *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Use the default font
+    priv->FontStr = sqd_layout_get_pparam( sb, "font", NULL );
+
+    // Process a color strings.
+    TmpStr = sqd_layout_get_pparam(sb, "text.color", NULL);
+    sqd_layout_process_color_str(sb, TmpStr, &priv->TextColor);
+
+    TmpStr = sqd_layout_get_pparam(sb, "line.color", NULL);
+    sqd_layout_process_color_str(sb, TmpStr, &priv->LineColor);
+    sqd_layout_process_color_str(sb, TmpStr, &priv->StemColor);
+
+    TmpStr = sqd_layout_get_pparam(sb, "fill.color", NULL);
+    sqd_layout_process_color_str(sb, TmpStr, &priv->FillColor);
+
+}
+
+static void
+sqd_layout_use_title_presentation( SQDLayout *sb )
+{
+	SQDLayoutPrivate *priv;
+    gchar *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // First look for a specific font for the title block
+    priv->FontStr = sqd_layout_get_pparam( sb, "title.font", NULL );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", NULL );
+
+    // Title color 
+    TmpStr = sqd_layout_get_pparam(sb, "title.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->FillColor);
+   
+}
+
+static void
+sqd_layout_use_description_presentation( SQDLayout *sb )
+{
+	SQDLayoutPrivate *priv;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // First look for a specific font for the description block
+    priv->FontStr = sqd_layout_get_pparam( sb, "description.font", NULL );
+
+    // Fall back to the default font.
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", NULL );
+
+}
+
+static void
+sqd_layout_use_actor_presentation( SQDLayout *sb, gchar *ClassStr )
+{
+	SQDLayoutPrivate *priv;
+    gchar            *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // First look for a specific font for the actor block, in decreasing specificity.
+    priv->FontStr = sqd_layout_get_pparam( sb, "actor.font", ClassStr );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", ClassStr );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "actor.font", NULL );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", NULL );
+
+    // Look for a specfic fill color. 
+    TmpStr = sqd_layout_get_pparam(sb, "actor.fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "actor.fill.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->FillColor);
+
+    // Look for a specfic stem color. 
+    TmpStr = sqd_layout_get_pparam(sb, "actor.stem.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "line.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "actor.stem.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "line.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->StemColor);
+
+}
+
+static void
+sqd_layout_use_event_presentation( SQDLayout *sb, gchar *ClassStr )
+{
+	SQDLayoutPrivate *priv;
+    gchar            *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // First look for a specific font for the actor block, in decreasing specificity.
+    priv->FontStr = sqd_layout_get_pparam( sb, "event.font", ClassStr );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", ClassStr );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "event.font", NULL );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", NULL );
+
+    // Look for a specfic stem color. 
+    TmpStr = sqd_layout_get_pparam(sb, "event.stem.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "line.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "event.stem.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "line.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->StemColor);
+
+}
+
+static void
+sqd_layout_use_note_presentation( SQDLayout *sb, gchar *ClassStr )
+{
+	SQDLayoutPrivate *priv;
+    gchar            *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // First look for a specific font for the actor block, in decreasing specificity.
+    priv->FontStr = sqd_layout_get_pparam( sb, "note.font", ClassStr );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", ClassStr );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "note.font", NULL );
+    if( priv->FontStr == NULL )
+        priv->FontStr = sqd_layout_get_pparam( sb, "font", NULL );
+
+    // Look for a specfic fill color. 
+    TmpStr = sqd_layout_get_pparam(sb, "note.fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "note.fill.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->FillColor);
+
+}
+
+static void
+sqd_layout_use_noteref_presentation( SQDLayout *sb, gchar *ClassStr )
+{
+	SQDLayoutPrivate *priv;
+    gchar            *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Look for a specfic stem color. 
+    TmpStr = sqd_layout_get_pparam(sb, "noteref.stem.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "line.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "noteref.stem.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "line.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->StemColor);
+
+}
+
+static void
+sqd_layout_use_aregion_presentation( SQDLayout *sb, gchar *ClassStr )
+{
+	SQDLayoutPrivate *priv;
+    gchar            *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Look for a specfic fill color. 
+    TmpStr = sqd_layout_get_pparam(sb, "actor-region.fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "actor-region.fill.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->FillColor);
+
+}
+
+static void
+sqd_layout_use_bregion_presentation( SQDLayout *sb, gchar *ClassStr )
+{
+	SQDLayoutPrivate *priv;
+    gchar            *TmpStr;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Look for a specfic fill color. 
+    TmpStr = sqd_layout_get_pparam(sb, "box-region.fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", ClassStr);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "box-region.fill.color", NULL);
+    if( TmpStr == NULL )
+        TmpStr = sqd_layout_get_pparam(sb, "fill.color", NULL);
+
+    sqd_layout_process_color_str(sb, TmpStr, &priv->FillColor);
+}
+
+
+
 static void
 sqd_layout_draw_rounded_rec( SQDLayout *sb, gdouble x, gdouble y, gdouble w, gdouble h, gdouble r)
 {
@@ -488,116 +799,6 @@ sqd_layout_draw_rounded_rec( SQDLayout *sb, gdouble x, gdouble y, gdouble w, gdo
     cairo_curve_to(priv->cr,x,y+h,x,y+h,x,y+h-r);       // Curve to G
     cairo_line_to(priv->cr,x,y+r);                      // Line to H
     cairo_curve_to(priv->cr,x,y,x,y,x+r,y);             // Curve to A
-}
-
-static void
-sqd_layout_draw_actor ( SQDLayout *sb, int ActorIndex, char *ActorTitle)
-{
-	SQDLayoutPrivate *priv;
-  PangoLayout *layout;
-  PangoFontDescription *desc;
-  int i;
-  int pwidth, pheight;
-  double cwidth, cheight;
-
-  priv = SQD_LAYOUT_GET_PRIVATE (sb);
-
-  /* Center coordinates on the middle of the region we are drawing
-   */
-  cairo_move_to (priv->cr, priv->SeqBox.Start + (ActorIndex * priv->SeqBox.End), priv->SeqBox.Top);
-
-  /* Create a PangoLayout, set the font and text */
-  layout = pango_cairo_create_layout (priv->cr);
-  
-  pango_layout_set_text (layout, ActorTitle, -1);
-  desc = pango_font_description_from_string ("Times 10");
-  pango_layout_set_font_description (layout, desc);
-  pango_font_description_free (desc);
-
-  pango_layout_get_size (layout, &pwidth, &pheight);
-
-  printf("Pango Extents: %g %g\n", ((double)pwidth / PANGO_SCALE), ((double)pheight / PANGO_SCALE) ); 
-
-  cwidth = ((double)pwidth / PANGO_SCALE); /// (8.0*72);
-  cheight = ((double)pheight / PANGO_SCALE); /// (11.0*72) ;
-
-  printf("Pango Extents 2: %g %g\n", cwidth, cheight ); 
-
-  cairo_rel_move_to (priv->cr, -(cwidth / 2), 0);
-  pango_cairo_show_layout (priv->cr, layout);
-
-  cairo_rel_move_to (priv->cr, 0, cheight);
-  cairo_rel_line_to (priv->cr, cwidth, 0);
-  cairo_rel_move_to (priv->cr, -(cwidth/2), 0);
-  cairo_rel_line_to (priv->cr, 0, (priv->SeqBox.Bottom - priv->SeqBox.Top));
-
-  //cairo_set_line_width (priv->cr, 4);
-  cairo_stroke (priv->cr);
-
-
-  /* free the layout object */
-  g_object_unref (layout);
-}
-
-static void
-sqd_layout_draw_arrow ( SQDLayout *sb, int EventIndex, int StartActorIndex, int EndActorIndex, char *TopText, char *BottomText)
-{
-	SQDLayoutPrivate *priv;
-  PangoLayout *layout;
-  PangoFontDescription *desc;
-  int i;
-  int pwidth, pheight;
-  double cwidth, cheight;
-
-  double StartX, EndX, EventY;
-  double ArrowX, ArrowY;
-
-    priv = SQD_LAYOUT_GET_PRIVATE (sb);
-
-  StartX = priv->SeqBox.Start + (StartActorIndex * priv->SeqBox.End);
-  EndX   = priv->SeqBox.Start + (EndActorIndex * priv->SeqBox.End);
-  //EventY = priv->SeqBox.Top + (EventIndex * priv->EventHeight) + 72;
-
-  ArrowX = (StartX > EndX) ? (EndX + 3.0) : (EndX - 3.0);  
-  ArrowY = 3.0;
-
-  /* Center coordinates on the middle of the region we are drawing
-   */
-
-  cairo_move_to (priv->cr, StartX, EventY);
-
-  cairo_line_to (priv->cr, EndX, EventY);
-  cairo_line_to (priv->cr, ArrowX, (EventY - ArrowY));
-  cairo_move_to (priv->cr, EndX, EventY);
-  cairo_line_to (priv->cr, ArrowX, (EventY + ArrowY));
-
-  cairo_stroke (priv->cr);
-
-  /* Create a PangoLayout, set the font and text */
-  //layout = pango_cairo_create_layout (priv->cr);
-  
-  //pango_layout_set_text (layout, ActorTitle, -1);
-  //desc = pango_font_description_from_string ("Times 10");
-  //pango_layout_set_font_description (layout, desc);
-  //pango_font_description_free (desc);
-
-  //pango_layout_get_size (layout, &pwidth, &pheight);
-
-  //printf("Pango Extents: %g %g\n", ((double)pwidth / PANGO_SCALE), ((double)pheight / PANGO_SCALE) ); 
-
-  //cwidth = ((double)pwidth / PANGO_SCALE); /// (8.0*72);
-  //cheight = ((double)pheight / PANGO_SCALE); /// (11.0*72) ;
-
-  //printf("Pango Extents 2: %g %g\n", cwidth, cheight ); 
-
-  //cairo_rel_move_to (priv->cr, -(cwidth / 2), 0);
-  //pango_cairo_show_layout (priv->cr, layout);
-
-
-  //cairo_set_line_width (priv->cr, 4);
-
-  /* free the layout object */
-  //g_object_unref (layout);
 }
 
 static void
@@ -627,7 +828,7 @@ sqd_layout_measure_text( SQDLayout *sb, SQD_TXT *Text, double Width)
         pango_layout_set_wrap (layout, PANGO_WRAP_WORD);
     }
 
-    desc = pango_font_description_from_string( sqd_layout_get_pparam( sb, "font", NULL) );
+    desc = pango_font_description_from_string( priv->FontStr );
     pango_layout_set_font_description (layout, desc);
     pango_font_description_free (desc);
 
@@ -642,6 +843,8 @@ sqd_layout_measure_text( SQDLayout *sb, SQD_TXT *Text, double Width)
     g_object_unref (layout);
 
 }
+
+// sqd_layout_get_pparam( sb, "font", NULL)
 
 static double
 sqd_layout_arrange_actors( SQDLayout *sb )
@@ -676,6 +879,9 @@ sqd_layout_arrange_actors( SQDLayout *sb )
     {
         Actor = g_ptr_array_index(priv->Actors, i);
 
+        // Setup the parameters for the title bar
+        sqd_layout_use_actor_presentation(sb, Actor->hdr.ClassStr);
+
         sqd_layout_measure_text(sb, &Actor->Name, ActorTextWidth);
 
         printf("Pango Actor Extents: %g %g\n", Actor->Name.Width, Actor->Name.Height); 
@@ -684,8 +890,11 @@ sqd_layout_arrange_actors( SQDLayout *sb )
             priv->MaxActorHeight = Actor->Name.Height;   
 
         if( Actor->Name.Width > ActorMaxTextWidth )
-            ActorMaxTextWidth = Actor->Name.Width;        
-     
+            ActorMaxTextWidth = Actor->Name.Width;       
+
+        // Restore default presentation
+        sqd_layout_use_default_presentation(sb); 
+    
     }
 
     printf("Pango Actor Maxs: %g %g\n", priv->MaxActorHeight, ActorMaxTextWidth); 
@@ -694,6 +903,9 @@ sqd_layout_arrange_actors( SQDLayout *sb )
     for (i = 0; i <= priv->MaxActorIndex; i++)
     {
         Actor = g_ptr_array_index(priv->Actors, i);
+
+        // Setup the parameters for the title bar
+        sqd_layout_use_actor_presentation(sb, Actor->hdr.ClassStr);
 
         Actor->BoundsBox.Top    = ActorTop;
         Actor->BoundsBox.Bottom = priv->ActorBox.Bottom;
@@ -721,6 +933,9 @@ sqd_layout_arrange_actors( SQDLayout *sb )
 
         if( (Actor->StemBox.Top + priv->ElementPad) > EventTop )
             EventTop = (Actor->StemBox.Top + priv->ElementPad);
+
+        // Restore default presentation
+        sqd_layout_use_default_presentation(sb);
     }
 
     return EventTop;
@@ -772,6 +987,9 @@ sqd_layout_arrange_notes( SQDLayout *sb )
     {
         Note = g_ptr_array_index(priv->Notes, i);
 
+        // Setup the parameters
+        sqd_layout_use_note_presentation(sb, Note->hdr.ClassStr);
+        
         sqd_layout_measure_text(sb, &Note->Text, NoteTextWidth);
 
         printf("Pango Note Extents: %g %g\n", Note->Text.Width, Note->Text.Height);      
@@ -784,6 +1002,10 @@ sqd_layout_arrange_notes( SQDLayout *sb )
         debug_box_print("Note Box", &Note->BoundsBox);
 
         NoteTop = (Note->BoundsBox.Bottom + priv->ElementPad);
+
+        // Restore default presentation
+        sqd_layout_use_default_presentation(sb);
+
     }
 
     return 0;
@@ -820,6 +1042,9 @@ sqd_layout_arrange_events( SQDLayout *sb )
         while( Element )
         {
             Event = Element->data;
+
+            // Setup the parameters
+            sqd_layout_use_event_presentation(sb, Event->hdr.ClassStr);
 
             // Calculate the arrow length so that available space for text layout can be calculated.
             switch ( Event->ArrowDir )
@@ -1019,6 +1244,8 @@ sqd_layout_arrange_events( SQDLayout *sb )
 
             }
             
+            // Restore default presentation
+            sqd_layout_use_default_presentation(sb);
 
             Element = g_list_next(Element);
         } // Event Layout Loop
@@ -1115,6 +1342,8 @@ sqd_layout_get_event_point( SQDLayout *sb, SQD_OBJ *RefObj, int RefType, double 
                 }
             break;
     } // Ref Type switch
+
+
 }
 
 static gboolean
@@ -1132,6 +1361,9 @@ sqd_layout_arrange_aregions( SQDLayout *sb )
     {
         AReg = g_ptr_array_index(priv->ActorRegions, i);
 
+        // Setup the parameters
+        sqd_layout_use_aregion_presentation(sb, AReg->hdr.ClassStr);
+
         if( AReg->SEventRef->StemBox.Top >= AReg->EEventRef->StemBox.Bottom )
         {
             g_error("The start event must proceed the end event in an actor region. (failing id '%s'", AReg->hdr.IdStr);
@@ -1145,6 +1377,10 @@ sqd_layout_arrange_aregions( SQDLayout *sb )
         AReg->BoundsBox.End    = AReg->ActorRef->StemBox.Start + (priv->LineWidth/2.0) + (2.0*priv->LineWidth);
 
         debug_box_print("ARegion Box", &AReg->BoundsBox);
+
+        // Restore default presentation
+        sqd_layout_use_default_presentation(sb);
+
     }
 
     return FALSE;
@@ -1187,6 +1423,9 @@ sqd_layout_arrange_bregions( SQDLayout *sb )
     {
         BReg = g_ptr_array_index(priv->BoxRegions, i);
 
+        // Setup the parameters
+        sqd_layout_use_bregion_presentation(sb, BReg->hdr.ClassStr);
+
         if( BReg->SEventRef->EventBox.Top >= BReg->EEventRef->EventBox.Bottom )
         {
             g_error("The start event must proceed the end event in a box region. (failing id '%s'", BReg->hdr.IdStr);
@@ -1206,6 +1445,10 @@ sqd_layout_arrange_bregions( SQDLayout *sb )
         BReg->BoundsBox.End    = BReg->EActorRef->BoundsBox.End;
 
         debug_box_print("BRegion Box", &BReg->BoundsBox);
+
+        // Restore default presentation
+        sqd_layout_use_default_presentation(sb);
+
     }
 
     return 0;
@@ -1254,6 +1497,9 @@ sqd_layout_arrange_notes_references( SQDLayout *sb )
     {
         Note = g_ptr_array_index(priv->Notes, i);
 
+        // Setup the parameters
+        sqd_layout_use_noteref_presentation(sb, Note->hdr.ClassStr);
+
         // Start the arrow at the note.
         Note->RefFirstTop   = Note->BoundsBox.Top;
         Note->RefFirstStart = Note->BoundsBox.Start;
@@ -1286,6 +1532,10 @@ sqd_layout_arrange_notes_references( SQDLayout *sb )
                 sqd_layout_get_bregion_point( sb, Note->RefObj, &Note->RefLastTop, &Note->RefLastStart );
             break;
         } // Ref Type switch
+
+        // Restore default presentation
+        sqd_layout_use_default_presentation(sb);
+
     } // Note Loop
 }
 
@@ -1305,6 +1555,9 @@ sqd_layout_arrange_diagram( SQDLayout *sb )
     // Determine the amount of space needed for the title
     if( priv->Title.Str )
     {
+        // Setup the parameters for the title bar
+        sqd_layout_use_title_presentation(sb);
+
         priv->TitleBar.Start   = priv->TitleBox.Start;
         priv->TitleBar.End     = priv->TitleBox.End;
         priv->TitleBar.Top     = priv->TitleBox.Top + priv->ElementPad;
@@ -1319,6 +1572,9 @@ sqd_layout_arrange_diagram( SQDLayout *sb )
         debug_box_print("TitleBar", &priv->TitleBar);
         debug_box_print("TitleBox", &priv->TitleBox);
 
+        // Restore defaults
+        sqd_layout_use_default_presentation(sb);
+
     }
 
     // Default to not having a Description
@@ -1330,6 +1586,9 @@ sqd_layout_arrange_diagram( SQDLayout *sb )
     // Determine the amount of space needed for the description block
     if( priv->Description.Str )
     {
+        // Setup the parameters for the title bar
+        sqd_layout_use_description_presentation(sb);
+
         sqd_layout_measure_text(sb, &priv->Description, (priv->DescriptionBox.End - priv->DescriptionBox.Start - (2 * priv->TextPad)));
 
         priv->DescriptionBox.Bottom  = priv->TitleBox.Bottom + priv->Description.Height + (2 * priv->ElementPad) + (2 * priv->TextPad);
@@ -1337,6 +1596,8 @@ sqd_layout_arrange_diagram( SQDLayout *sb )
         printf("Pango Description Extents: %g %g\n", priv->Description.Width,priv->Description.Height);  
         debug_box_print("DescriptionBox", &priv->DescriptionBox);
 
+        // Restore default presentation
+        sqd_layout_use_default_presentation(sb);
     }
 
     // Determine if a notes column is needed.
@@ -1427,7 +1688,7 @@ sqd_layout_draw_text( SQDLayout *sb, SQD_TXT *Text, double Width )
         pango_layout_set_wrap (layout, PANGO_WRAP_WORD);
     }
 
-    desc = pango_font_description_from_string( sqd_layout_get_pparam( sb, "font", NULL) );
+    desc = pango_font_description_from_string( priv->FontStr );
     pango_layout_set_font_description (layout, desc);
     pango_font_description_free (desc);
 
@@ -1463,8 +1724,11 @@ sqd_layout_draw_actors( SQDLayout *sb )
     {
         Actor = g_ptr_array_index(priv->Actors, i);
 
+        // Setup the actor presentation parameters
+        sqd_layout_use_actor_presentation(sb, Actor->hdr.ClassStr);
+
         // Draw the Text bounding box.
-        cairo_set_source_rgb (priv->cr, 0.95, 0.7, 0.95);
+        cairo_set_source_rgba(priv->cr, priv->FillColor.Red, priv->FillColor.Green, priv->FillColor.Blue, priv->FillColor.Alpha);
 
         cairo_rectangle(priv->cr, Actor->NameBox.Start, Actor->NameBox.Top, 
                             (Actor->NameBox.End - Actor->NameBox.Start),
@@ -1475,7 +1739,7 @@ sqd_layout_draw_actors( SQDLayout *sb )
 
         // Draw the Actor Title
         // Center it over the Stem
-        cairo_set_source_rgb (priv->cr, 0, 0, 0);
+        cairo_set_source_rgba(priv->cr, priv->TextColor.Red, priv->TextColor.Green, priv->TextColor.Blue, priv->TextColor.Alpha);
 
         cairo_move_to (priv->cr, 
                        ((Actor->StemBox.Start + priv->LineWidth) - (Actor->Name.Width / 2.0)),
@@ -1485,6 +1749,8 @@ sqd_layout_draw_actors( SQDLayout *sb )
 
     
         // Draw the Baseline
+        cairo_set_source_rgba(priv->cr, priv->LineColor.Red, priv->LineColor.Green, priv->LineColor.Blue, priv->LineColor.Alpha);
+
         cairo_move_to (priv->cr, Actor->BaselineBox.Start, Actor->BaselineBox.Top + (priv->LineWidth/2.0));
         cairo_line_to (priv->cr, Actor->BaselineBox.End, Actor->BaselineBox.Top + (priv->LineWidth/2.0));
 
@@ -1492,8 +1758,7 @@ sqd_layout_draw_actors( SQDLayout *sb )
 
 
         // Draw the Stem
-        cairo_save(priv->cr);
-        cairo_set_source_rgba (priv->cr, 0.4, 0.4, 0.4, 0.5);
+        cairo_set_source_rgba(priv->cr, priv->StemColor.Red, priv->StemColor.Green, priv->StemColor.Blue, priv->StemColor.Alpha);
         //cairo_set_dash (priv->cr, dashes, ndash, offset);
 
         cairo_move_to (priv->cr, Actor->StemBox.Start + (priv->LineWidth/2.0), Actor->StemBox.Top);
@@ -1501,7 +1766,8 @@ sqd_layout_draw_actors( SQDLayout *sb )
 
         cairo_stroke (priv->cr);
 
-        cairo_restore(priv->cr);     
+        // Back to default rendering settings
+        sqd_layout_use_default_presentation(sb);
     }
 
 }
@@ -1807,9 +2073,12 @@ sqd_layout_draw_diagram( SQDLayout *sb )
 
     if( priv->Title.Str )
     {
+        // Setup the parameters for the title bar
+        sqd_layout_use_title_presentation(sb);
+
         priv->TitleBar.Start   = priv->TitleBox.Start;
 
-        cairo_set_source_rgb (priv->cr, 0.95, 0.7, 0.95);
+        cairo_set_source_rgba(priv->cr, priv->FillColor.Red, priv->FillColor.Green, priv->FillColor.Blue, priv->FillColor.Alpha);
 
         cairo_rectangle(priv->cr, priv->TitleBar.Start, priv->TitleBar.Top, 
                             (priv->TitleBar.End - priv->TitleBar.Start),
@@ -1817,21 +2086,33 @@ sqd_layout_draw_diagram( SQDLayout *sb )
 
         cairo_fill (priv->cr);
 
-        cairo_set_source_rgb (priv->cr, 0, 0, 0);
+        cairo_set_source_rgba(priv->cr, priv->TextColor.Red, priv->TextColor.Green, priv->TextColor.Blue, priv->TextColor.Alpha);
 
         cairo_move_to (priv->cr, (priv->TitleBar.Start + priv->TextPad), (priv->TitleBar.Top + priv->TextPad));
 
         sqd_layout_draw_text( sb, &priv->Title, (priv->TitleBar.End - priv->TitleBar.Start) );
+
+        // Back to the default presentation
+        sqd_layout_use_default_presentation(sb);
     }
 
     // Determine the amount of space needed for the description block
     if( priv->Description.Str )
     {
+        // Setup the parameters for the description region
+        sqd_layout_use_description_presentation(sb);
+
+        cairo_set_source_rgba(priv->cr, priv->TextColor.Red, priv->TextColor.Green, priv->TextColor.Blue, priv->TextColor.Alpha);
+
         cairo_move_to (priv->cr, 
                         (priv->DescriptionBox.Start + priv->TextPad), 
                         (priv->DescriptionBox.Top + priv->ElementPad + priv->TextPad));
 
         sqd_layout_draw_text( sb, &priv->Description, (priv->DescriptionBox.End - priv->DescriptionBox.Start) );
+
+        // Back to the default presentation
+        sqd_layout_use_default_presentation(sb);
+
     }
 
     sqd_layout_draw_actors(sb);
