@@ -614,9 +614,9 @@ parse_note_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
                 RefTypeValue = NOTE_REFTYPE_EVENT_END;
             else if( g_strcmp0(RefType, "actor") == 0 )
                 RefTypeValue = NOTE_REFTYPE_ACTOR;
-            else if( g_strcmp0(RefType, "vspan") == 0 )
+            else if( g_strcmp0(RefType, "aregion") == 0 )
                 RefTypeValue = NOTE_REFTYPE_VSPAN;
-            else if( g_strcmp0(RefType, "boxspan") == 0 )
+            else if( g_strcmp0(RefType, "bregion") == 0 )
                 RefTypeValue = NOTE_REFTYPE_BOXSPAN;
             else
             {

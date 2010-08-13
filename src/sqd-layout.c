@@ -781,8 +781,8 @@ sqd_layout_get_actor_point( SQDLayout *sb, SQD_OBJ *RefObj, double *Top, double 
         return;
 
     // Get a point at the baseline and stem intersection.
-    *Top   = Actor->BaselineBox.Bottom + priv->ElementPad;
-    *Start = Actor->StemBox.End + priv->ElementPad;
+    *Top   = Actor->BaselineBox.Top - (2.0*priv->LineWidth);
+    *Start = Actor->BaselineBox.End - (2.0*priv->LineWidth);
 }
 
 
@@ -1091,26 +1091,19 @@ sqd_layout_get_event_point( SQDLayout *sb, SQD_OBJ *RefObj, int RefType, double 
             case NOTE_REFTYPE_EVENT_START: 
                 switch ( Event->ArrowDir )
                 {
-                    case ARROWDIR_EXTERNAL_TO:
-                        exit(-2);
-                    break;
-
-                    case ARROWDIR_EXTERNAL_FROM:
-                        exit(-2);
-                    break;
-
                     case ARROWDIR_STEP:
-                        exit(-2);
-                    break;
-
-                    case ARROWDIR_LEFT_TO_RIGHT:
-                        // Get a point at the baseline and stem intersection.
                         *Top   = Event->StemBox.Top;
                         *Start = Event->StemBox.Start;
                     break;
 
+                    case ARROWDIR_EXTERNAL_TO:
+                    case ARROWDIR_LEFT_TO_RIGHT:
+                        *Top   = Event->StemBox.Top;
+                        *Start = Event->StemBox.Start;
+                    break;
+
+                    case ARROWDIR_EXTERNAL_FROM:
                     case ARROWDIR_RIGHT_TO_LEFT:
-                        // Get a point at the baseline and stem intersection.
                         *Top   = Event->StemBox.Top;
                         *Start = Event->StemBox.End;
                     break;
@@ -1118,32 +1111,36 @@ sqd_layout_get_event_point( SQDLayout *sb, SQD_OBJ *RefObj, int RefType, double 
             break;
   
             case NOTE_REFTYPE_EVENT_MIDDLE:  
-                // Get a point at the baseline and stem intersection.
-                *Top   = Event->StemBox.Top;
-                *Start = ((Event->StemBox.End - Event->StemBox.Start)/2.0) + Event->StemBox.Start;
+                if( Event->ArrowDir == ARROWDIR_STEP )
+                {
+                    // Point to the end of the text in this case, and the center vertically
+                    *Top   = (Event->EventBox.Top + Event->EventBox.Bottom)/2.0;
+                    *Start = Event->EventBox.End + (2.0*priv->LineWidth);                    
+                }
+                else
+                {
+                    // Find the center point of the arrow
+                    *Top   = Event->StemBox.Top;
+                    *Start = ((Event->StemBox.End - Event->StemBox.Start)/2.0) + Event->StemBox.Start;
+                }
             break;
 
             case NOTE_REFTYPE_EVENT_END: 
                 switch ( Event->ArrowDir )
                 {
-                    case ARROWDIR_EXTERNAL_TO:
-                        exit(-2);
-                    break;
-
-                    case ARROWDIR_EXTERNAL_FROM:
-                        exit(-2);
-                    break;
-
                     case ARROWDIR_STEP:
-                        exit(-2);
+                        *Top   = Event->StemBox.Bottom;
+                        *Start = Event->StemBox.Start;
                     break;
 
+                    case ARROWDIR_EXTERNAL_TO:
                     case ARROWDIR_LEFT_TO_RIGHT:
                         // Get a point at the baseline and stem intersection.
                         *Top   = Event->StemBox.Top;
                         *Start = Event->StemBox.End;
                     break;
 
+                    case ARROWDIR_EXTERNAL_FROM:
                     case ARROWDIR_RIGHT_TO_LEFT:
                         // Get a point at the baseline and stem intersection.
                         *Top   = Event->StemBox.Top;
@@ -1187,6 +1184,29 @@ sqd_layout_arrange_aregions( SQDLayout *sb )
     return FALSE;
 }
 
+static void 
+sqd_layout_get_aregion_point( SQDLayout *sb, SQD_OBJ *RefObj, double *Top, double *Start )
+{
+	SQDLayoutPrivate *priv;
+    SQD_ACTOR_REGION *AReg;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // default the point
+    *Top   = 0;
+    *Start = 0;
+
+    // Look up the actor element
+    AReg = (SQD_ACTOR_REGION *)RefObj;
+
+    if( (AReg == NULL) || (AReg->hdr.Type != SDOBJ_AREGION) )
+        return;
+
+    // Get a point at the baseline and stem intersection.
+    *Top   = AReg->BoundsBox.Top + (5.0*priv->LineWidth);
+    *Start = AReg->BoundsBox.End;
+}
+
 static gboolean
 sqd_layout_arrange_bregions( SQDLayout *sb )
 {
@@ -1225,6 +1245,29 @@ sqd_layout_arrange_bregions( SQDLayout *sb )
     return 0;
 }
 
+static void 
+sqd_layout_get_bregion_point( SQDLayout *sb, SQD_OBJ *RefObj, double *Top, double *Start )
+{
+	SQDLayoutPrivate *priv;
+    SQD_BOX_REGION   *BReg;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // default the point
+    *Top   = 0;
+    *Start = 0;
+
+    // Look up the actor element
+    BReg = (SQD_BOX_REGION *)RefObj;
+
+    if( (BReg == NULL) || (BReg->hdr.Type != SDOBJ_BREGION) )
+        return;
+
+    // Get a point at the baseline and stem intersection.
+    *Top   = BReg->BoundsBox.Top + (3.0 * priv->LineWidth);
+    *Start = BReg->BoundsBox.End - (3.0 * priv->LineWidth);
+}
+
 static double
 sqd_layout_arrange_notes_references( SQDLayout *sb )
 {
@@ -1257,30 +1300,24 @@ sqd_layout_arrange_notes_references( SQDLayout *sb )
 
             // References the a specific Actor.
             case NOTE_REFTYPE_ACTOR: 
-
-                // End it at the middle of the event arrow.
                 sqd_layout_get_actor_point( sb, Note->RefObj, &Note->RefLastTop, &Note->RefLastStart );
-        
             break;
 
             // Reference a specific event.
             case NOTE_REFTYPE_EVENT_START:   
             case NOTE_REFTYPE_EVENT_MIDDLE:  
             case NOTE_REFTYPE_EVENT_END:     
-
-                // Get the end-point for the reference.
                 sqd_layout_get_event_point( sb, Note->RefObj, Note->ReferenceType, &Note->RefLastTop, &Note->RefLastStart );
-
             break;
            
             // Reference to a Vertical Span of events.
             case NOTE_REFTYPE_VSPAN:         
-
+                sqd_layout_get_aregion_point( sb, Note->RefObj, &Note->RefLastTop, &Note->RefLastStart );
             break;
 
             // Group events into a box. Reference to the box.
             case NOTE_REFTYPE_BOXSPAN:       
-
+                sqd_layout_get_bregion_point( sb, Note->RefObj, &Note->RefLastTop, &Note->RefLastStart );
             break;
         } // Ref Type switch
     } // Note Loop
@@ -1772,8 +1809,7 @@ sqd_layout_draw_note_references( SQDLayout *sb )
         if( Note->ReferenceType == NOTE_REFTYPE_NONE )
             continue;
 
-        // Draw the Actor Title
-        // Center it over the Stem
+        // Setup to draw the reference line.
         cairo_save(priv->cr);
         cairo_set_source_rgba (priv->cr, 0.6, 0.6, 0.6, 0.6);
         cairo_set_line_cap  (priv->cr, CAIRO_LINE_CAP_ROUND);
@@ -1782,6 +1818,10 @@ sqd_layout_draw_note_references( SQDLayout *sb )
         cairo_move_to (priv->cr, Note->BoundsBox.Start, Note->BoundsBox.Top);
         cairo_line_to (priv->cr, Note->RefLastStart, Note->RefLastTop ); 
         cairo_stroke (priv->cr);
+
+        // Draw a small circle at the termination of the note reference.
+        cairo_arc(priv->cr, Note->RefLastStart, Note->RefLastTop, 2*priv->LineWidth, 0.0, 2*M_PI );
+        cairo_fill(priv->cr);
 
         cairo_restore(priv->cr);
 
@@ -2383,18 +2423,32 @@ sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, int NoteIndex, int NoteType, g
             RefObj = g_hash_table_lookup(priv->IdTable, RefId);
             if( (RefObj == NULL) || (RefObj->Type != SDOBJ_EVENT) )
             {
-                g_error("Couldn't find the note, actor object with id \"%s\".\n", RefId);
+                g_error("Couldn't find the note, event object with id \"%s\".\n", RefId);
                 return TRUE;
             }
             g_print("RefObj ID Lookup: 0x%x, %d, %d, %s\n", RefObj, RefObj->Index, RefObj->Type, RefObj->IdStr);                   
         break;
 
         case NOTE_REFTYPE_VSPAN:  
-            g_error("ref Vspan not supported.\n");       
+            // Lookup the referenced object
+            RefObj = g_hash_table_lookup(priv->IdTable, RefId);
+            if( (RefObj == NULL) || (RefObj->Type != SDOBJ_AREGION) )
+            {
+                g_error("Couldn't find the note, actor-region object with id \"%s\".\n", RefId);
+                return TRUE;
+            }
+            g_print("RefObj ID Lookup: 0x%x, %d, %d, %s\n", RefObj, RefObj->Index, RefObj->Type, RefObj->IdStr);                   
         break;
 
         case NOTE_REFTYPE_BOXSPAN:       
-            g_error("ref BoxSpan not supported.\n");       
+            // Lookup the referenced object
+            RefObj = g_hash_table_lookup(priv->IdTable, RefId);
+            if( (RefObj == NULL) || (RefObj->Type != SDOBJ_BREGION) )
+            {
+                g_error("Couldn't find the note, box-region object with id \"%s\".\n", RefId);
+                return TRUE;
+            }
+            g_print("RefObj ID Lookup: 0x%x, %d, %d, %s\n", RefObj, RefObj->Index, RefObj->Type, RefObj->IdStr);                   
         break;
     }
 

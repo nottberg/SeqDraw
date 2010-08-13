@@ -59,12 +59,15 @@
             <sqd:box-region id="box1" start-actor="firmware" end-actor="dma" start-event="e6" end-event="e13"/>
         </sqd:box-region-list>
         <sqd:note-list>
-            <sqd:note id="note1" reference="actor" refid="dma">
+            <sqd:note id="note1">
                 Test Note 1
             </sqd:note>
-            <sqd:note id="note2" reference="event-start" refid="e2">
+            <sqd:note id="note2" reference="actor" refid="dma">
                 Kevin likes to put his notes over in a column on the side of the sequence diagram and then draw a line between
                 the note and the event of interest.
+            </sqd:note>
+            <sqd:note id="note10" reference="aregion" refid="reg1">
+                Test Note 9
             </sqd:note>
             <sqd:note id="note3" reference="event-middle" refid="e3">
                 Test Note 3
@@ -74,6 +77,22 @@
             </sqd:note>
             <sqd:note id="note5">
                 Pure Note
+            </sqd:note>
+            <sqd:note id="note11" reference="bregion" refid="box1">
+                Test Note 10
+            </sqd:note>
+            <sqd:note id="note6" reference="event-start" refid="e9">
+                Test Note 5
+            </sqd:note>
+            <sqd:note id="note7" reference="event-middle" refid="e9">
+                Test Note 6;  Make this note longer to make the next notes line up better. Perhaps a
+                better way to add space between notes or an algorithm to sort the notes is desired here instead.
+            </sqd:note>
+            <sqd:note id="note8" reference="event-end" refid="e9">
+                Test Note 7
+            </sqd:note>
+            <sqd:note id="note9" reference="event-end" refid="e13">
+                Test Note 8
             </sqd:note>
         </sqd:note-list>
     </sqd:sequence>
