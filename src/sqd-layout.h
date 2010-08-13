@@ -67,17 +67,18 @@ struct _SQDLayoutClass
 
 SQDLayout *g_sqd_layout_new (void);
 
-gboolean sqd_layout_add_event( SQDLayout *sb, char *IdStr, int SlotIndex, gchar *StartActorId, gchar *EndActorId, char *TopLabel, char *BottomLabel);
+gboolean sqd_layout_set_name( SQDLayout *sb, gchar *NameStr );
+gboolean sqd_layout_set_description( SQDLayout *sb, gchar *DescStr );
+
+gboolean sqd_layout_add_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *StartActorId, gchar *EndActorId, gchar *TopLabel, gchar *BottomLabel);
 gboolean sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *ActorId, gchar *Label);
 gboolean sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *ActorId, gchar *Label, gboolean FromFlag);
-
-gboolean sqd_layout_add_actor( SQDLayout *sb, char *IdStr, int ActorIndex, char *ActorTitle);
-
-gboolean sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar *StartEvent, gchar *EndEvent);
-
+gboolean sqd_layout_add_actor( SQDLayout *sb, gchar *IdStr, int ActorIndex, gchar *ActorTitle);
+gboolean sqd_layout_add_actor_region( SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar *StartEvent, gchar *EndEvent);
 gboolean sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar *EndActor, gchar *StartEvent, gchar *EndEvent);
+gboolean sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, int NoteIndex, int NoteType, gchar *RefId, gchar *NoteText);
 
-gboolean sqd_layout_add_note( SQDLayout *sb, char *IdStr, int NoteIndex, int NoteType, gchar *RefId, char *NoteText);
+gboolean sqd_layout_set_presentation_parameter( SQDLayout *sb, gchar *IdStr, gchar *ValueStr, gchar *ClassStr );
 
 gboolean sqd_layout_generate_pdf( SQDLayout *sb, gchar *FilePath );
 gboolean sqd_layout_generate_png( SQDLayout *sb, gchar *FilePath );

@@ -44,6 +44,13 @@
 #include <math.h>
 #include <pango/pangocairo.h>
 
+typedef struct SDPresentationParameter
+{
+    gchar *ParamStr;
+    gchar *ClassStr;
+    gchar *ValueStr;
+}SQD_P_PARAM;
+
 typedef struct SeqDrawBox
 {
     double Top;
@@ -73,6 +80,7 @@ typedef struct SeqDrawObjectHdr
     guint8  Type;
     guint8  Index;
     gchar  *IdStr; 
+    gchar  *ClassStr;
 }SQD_OBJ;
 
 typedef struct SeqDrawActorRecord
@@ -183,6 +191,7 @@ typedef struct SeqDrawNoteRecord
 
 // Prototypes
 static void draw_text (cairo_t *cr);
+static gchar* sqd_layout_get_pparam( SQDLayout *sb, gchar *IdStr, gchar *ClassStr );
 static void sqd_layout_draw_actor ( SQDLayout *sb, int ActorIndex, char *ActorTitle);
 static void sqd_layout_draw_arrow ( SQDLayout *sb, int EventIndex, int StartActorIndex, int EndActorIndex, char *TopText, char *BottomText);
 static void debug_box_print(char *BoxName, SQD_BOX *Box);
@@ -240,7 +249,7 @@ struct _SQDLayoutPrivate
     SQD_BOX NoteBox;
 
     // Actor Stats
-    gint MaxActorIndex;
+    gint    MaxActorIndex;
     gdouble MaxActorHeight;
     gdouble ActorWidth;
 
@@ -255,7 +264,7 @@ struct _SQDLayoutPrivate
     GPtrArray *Actors;
     GPtrArray *ActorRegions;
     GPtrArray *BoxRegions;
-    GArray *EventLayers;
+    GArray    *EventLayers;
 
     //GList  *Events;
     cairo_surface_t *surface;
@@ -265,6 +274,10 @@ struct _SQDLayoutPrivate
 
     // Keep a hash table of assigned IDs
     GHashTable *IdTable;
+
+    // Keep a hash table of presentation parameters
+    GHashTable *PTable;
+
 };
 
 /* GObject callbacks */
@@ -403,101 +416,54 @@ sqd_layout_init (SQDLayout *sb)
         
     priv->IdTable = g_hash_table_new(g_str_hash, g_str_equal);
 
+    priv->PTable = g_hash_table_new(g_str_hash, g_str_equal);
+
     priv->dispose_has_run = FALSE;
+
+    sqd_layout_set_presentation_parameter(sb, "font", "Times 10", NULL);
+    //sqd_layout_set_presentation_parameter(sb, "font", "Courier 10", NULL);
+    //sqd_layout_set_presentation_parameter(sb, "font", "Impact 10", NULL);
+
 }
 
-
-
-static void
-draw_text (cairo_t *cr)
+static gchar* 
+sqd_layout_get_pparam( SQDLayout *sb, gchar *ParamStr, gchar *ClassStr )
 {
-#define RADIUS 50
-#define N_WORDS 10
-//#define FONT "Courier 10"
-#define FONT "Times 10"
+	SQDLayoutPrivate *priv;
+    gchar            *PStr;
+    SQD_P_PARAM      *PParam;
 
-  PangoLayout *layout;
-  PangoFontDescription *desc;
-  int i;
-  int pwidth, pheight;
-  double cwidth, cheight;
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
-  /* Center coordinates on the middle of the region we are drawing
-   */
-  //cairo_translate (cr, RADIUS, RADIUS);
-  cairo_move_to (cr, 0.5, 0.5);
-  //cairo_rel_move_to (cr, -0.4 , cheight + 0.2);      
-  //cairo_rel_line_to (cr, cwidth + 0.8, 0);
+    // Build the Parameter ID String
+    if(ClassStr)
+        PStr = g_strdup_printf("%s.%s", ClassStr, ParamStr);
+    else
+        PStr = g_strdup(ParamStr);
 
-  //cairo_rel_move_to (cr, -(0.4 + cwidth / 2) , 0);      
-  cairo_rel_line_to (cr, 0, .45);
-
-  cairo_stroke (cr);
-
-  cairo_move_to (cr, 0.5, 0.5);
-  cairo_scale(cr, 1.0, 1.0);
-
-  /* Create a PangoLayout, set the font and text */
-  layout = pango_cairo_create_layout (cr);
-  
-  pango_layout_set_text (layout, "Text", -1);
-  desc = pango_font_description_from_string (FONT);
-  pango_layout_set_font_description (layout, desc);
-  pango_font_description_free (desc);
-
-  /* Inform Pango to re-layout the text with the new transformation */
-  pango_cairo_update_layout (cr, layout);
-
-  pango_layout_get_size (layout, &pwidth, &pheight);
-
-  printf("Pango Extents: %g %g\n", ((double)pwidth / PANGO_SCALE), ((double)pheight / PANGO_SCALE) ); 
-
-  cwidth = ((double)pwidth / PANGO_SCALE); /// (8.0*72);
-  cheight = ((double)pheight / PANGO_SCALE); /// (11.0*72) ;
-
-  printf("Pango Extents 2: %g %g\n", cwidth, cheight ); 
-
-  //cairo_rel_move_to (cr, -(cwidth / 2), 0);
-  //cairo_move_to (cr, 0.5, 0.5);
-  pango_cairo_show_layout (cr, layout);
-
-  cairo_scale(cr, (8*72), (11*72));
-
-
-  /* Draw the layout N_WORDS times in a circle */
-#if 0
-  for (i = 0; i < N_WORDS; i++)
+    // Check if the Parameter exists
+    PParam = g_hash_table_lookup(priv->PTable, PStr);
+    if( PParam != NULL )
     {
-      int width, height;
-      double angle = (360. * i) / N_WORDS;
-      double red;
-
-      cairo_save (cr);
-
-      /* Gradient from red at angle == 60 to blue at angle == 240 */
-      //red   = (1 + cos ((angle - 60) * G_PI / 180.)) / 2;
-      //cairo_set_source_rgb (cr, red, 0, 1.0 - red);
-
-      //cairo_rotate (cr, angle * G_PI / 180.);
-    
-      /* Inform Pango to re-layout the text with the new transformation */
-      pango_cairo_update_layout (cr, layout);
-    
-      pango_layout_get_size (layout, &width, &height);
-      cairo_move_to (cr, - ((double)width / PANGO_SCALE) / 2, - RADIUS);
-      pango_cairo_show_layout (cr, layout);
-      
-      cairo_rel_line_to (cr, width, height);
-      cairo_set_line_width (cr, 4);
-      cairo_stroke (cr);
-
-
-      cairo_restore (cr);
+        g_print("pparam( %s ) = %s\n", PStr, PParam->ValueStr);
+        g_free(PStr);
+        return PParam->ValueStr;
     }
-#endif
 
-  /* free the layout object */
-  g_object_unref (layout);
+    // Cleanup
+    g_free(PStr);
+
+    // Try just the ParamStr incase the class didn't have the string defined.
+    PParam = g_hash_table_lookup(priv->PTable, ParamStr);
+    if( PParam != NULL )
+    {
+        g_print("pparam( %s ) = %s\n", ParamStr, PParam->ValueStr);
+        return PParam->ValueStr;
+    }
+
+    // Parameter was not found
+    g_print("pparam( %s ) = %s\n", ParamStr, "NULL");
+    return NULL;
 }
 
 static void
@@ -661,7 +627,7 @@ sqd_layout_measure_text( SQDLayout *sb, SQD_TXT *Text, double Width)
         pango_layout_set_wrap (layout, PANGO_WRAP_WORD);
     }
 
-    desc = pango_font_description_from_string (FONT);
+    desc = pango_font_description_from_string( sqd_layout_get_pparam( sb, "font", NULL) );
     pango_layout_set_font_description (layout, desc);
     pango_font_description_free (desc);
 
@@ -1461,7 +1427,7 @@ sqd_layout_draw_text( SQDLayout *sb, SQD_TXT *Text, double Width )
         pango_layout_set_wrap (layout, PANGO_WRAP_WORD);
     }
 
-    desc = pango_font_description_from_string (FONT);
+    desc = pango_font_description_from_string( sqd_layout_get_pparam( sb, "font", NULL) );
     pango_layout_set_font_description (layout, desc);
     pango_font_description_free (desc);
 
@@ -2072,6 +2038,7 @@ sqd_layout_add_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *StartAc
     TmpEvent->hdr.Index         = SlotIndex;
     TmpEvent->hdr.Type          = SDOBJ_EVENT;
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
+    TmpEvent->hdr.ClassStr      = NULL;
 
     if( TmpEvent->hdr.Index > priv->MaxEventIndex )
         priv->MaxEventIndex = TmpEvent->hdr.Index;
@@ -2134,6 +2101,7 @@ sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *Ac
     TmpEvent->hdr.Index         = SlotIndex;
     TmpEvent->hdr.Type          = SDOBJ_EVENT;
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
+    TmpEvent->hdr.ClassStr      = NULL;
 
     if( TmpEvent->hdr.Index > priv->MaxEventIndex )
         priv->MaxEventIndex = TmpEvent->hdr.Index;
@@ -2190,6 +2158,7 @@ sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar
     TmpEvent->hdr.Index         = SlotIndex;
     TmpEvent->hdr.Type          = SDOBJ_EVENT;
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
+    TmpEvent->hdr.ClassStr      = NULL;
 
     if( TmpEvent->hdr.Index > priv->MaxEventIndex )
         priv->MaxEventIndex = TmpEvent->hdr.Index;
@@ -2226,9 +2195,10 @@ sqd_layout_add_actor( SQDLayout *sb, gchar *IdStr, int ActorIndex, char *ActorTi
         return TRUE;
     }
 
-    TmpActor->hdr.Index               = ActorIndex;
-    TmpActor->hdr.Type                = SDOBJ_ACTOR;
-    TmpActor->hdr.IdStr               = g_strdup(IdStr);
+    TmpActor->hdr.Index           = ActorIndex;
+    TmpActor->hdr.Type            = SDOBJ_ACTOR;
+    TmpActor->hdr.IdStr           = g_strdup(IdStr);
+    TmpActor->hdr.ClassStr        = NULL;
 
     if( TmpActor->hdr.Index > priv->MaxActorIndex )
         priv->MaxActorIndex = TmpActor->hdr.Index;
@@ -2284,9 +2254,10 @@ sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar
         return TRUE;
     }
 
-    TmpRegion->hdr.Index = 0;
-    TmpRegion->hdr.Type  = SDOBJ_AREGION;
-    TmpRegion->hdr.IdStr = g_strdup(IdStr);
+    TmpRegion->hdr.Index    = 0;
+    TmpRegion->hdr.Type     = SDOBJ_AREGION;
+    TmpRegion->hdr.IdStr    = g_strdup(IdStr);
+    TmpRegion->hdr.ClassStr = NULL;
 
     TmpRegion->ActorRef = g_hash_table_lookup(priv->IdTable, ActorId);
     if( (TmpRegion->ActorRef == NULL) || (TmpRegion->ActorRef->hdr.Type != SDOBJ_ACTOR) )
@@ -2338,9 +2309,10 @@ sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar
         return TRUE;
     }
 
-    TmpRegion->hdr.Index = 0;
-    TmpRegion->hdr.Type  = SDOBJ_BREGION;
-    TmpRegion->hdr.IdStr = g_strdup(IdStr);
+    TmpRegion->hdr.Index    = 0;
+    TmpRegion->hdr.Type     = SDOBJ_BREGION;
+    TmpRegion->hdr.IdStr    = g_strdup(IdStr);
+    TmpRegion->hdr.ClassStr = NULL;
 
     TmpRegion->SActorRef = g_hash_table_lookup(priv->IdTable, StartActor);
     if( (TmpRegion->SActorRef == NULL) || (TmpRegion->SActorRef->hdr.Type != SDOBJ_ACTOR) )
@@ -2454,9 +2426,10 @@ sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, int NoteIndex, int NoteType, g
 
     TmpNote = malloc( sizeof(SQD_NOTE) );
 
-    TmpNote->hdr.Index           = NoteIndex;
-    TmpNote->hdr.Type            = SDOBJ_NOTE;
-    TmpNote->hdr.IdStr           = g_strdup(IdStr);
+    TmpNote->hdr.Index      = NoteIndex;
+    TmpNote->hdr.Type       = SDOBJ_NOTE;
+    TmpNote->hdr.IdStr      = g_strdup(IdStr);
+    TmpNote->hdr.ClassStr   = NULL;
 
     if( TmpNote->hdr.Index > priv->MaxNoteIndex )
         priv->MaxNoteIndex = TmpNote->hdr.Index;
@@ -2491,6 +2464,57 @@ sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, int NoteIndex, int NoteType, g
     // Add this object to the ID hash table.
     g_hash_table_insert( priv->IdTable, TmpNote->hdr.IdStr, TmpNote );
 
+}
+
+
+gboolean 
+sqd_layout_set_presentation_parameter( SQDLayout *sb, gchar *ParamStr, gchar *ValueStr, gchar *ClassStr )
+{
+	SQDLayoutPrivate *priv;
+    gchar            *PStr;
+    SQD_P_PARAM      *PParam;
+
+	priv = SQD_LAYOUT_GET_PRIVATE (sb);
+
+    // Build the Parameter ID String
+    if(ClassStr)
+        PStr = g_strdup_printf("%s.%s", ClassStr, ParamStr);
+    else
+        PStr = g_strdup(ParamStr);
+
+    // Check if the Parameter already has a value
+    PParam = g_hash_table_lookup(priv->PTable, PStr);
+    if( PParam != NULL )
+    {
+        // Parameter already exists, just modify the value.
+        if( PParam->ValueStr )
+            g_free( PParam->ValueStr );
+
+        PParam->ValueStr = g_strdup(ValueStr);
+
+        g_free(PStr);
+
+        return FALSE;
+    }
+
+    // Parameter does not yet exist, create and init the parameter.
+    PParam = g_malloc(sizeof(SQD_P_PARAM));
+
+    if(PParam == NULL)
+    {
+        g_error("Out of memory!\n");
+        return TRUE;
+    }
+
+    // Init the new parameter.
+    PParam->ParamStr = PStr;
+    PParam->ClassStr = g_strdup(ClassStr);
+    PParam->ValueStr = g_strdup(ValueStr);
+
+    // Install the parameter in the table
+    g_hash_table_insert( priv->PTable, PParam->ParamStr, PParam );
+
+    return FALSE;
 }
 
 gboolean
