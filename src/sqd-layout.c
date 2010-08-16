@@ -445,6 +445,10 @@ sqd_layout_init (SQDLayout *sb)
     sqd_layout_set_presentation_parameter(sb, "fill.color", "255,228,196,255", NULL);
 
     sqd_layout_set_presentation_parameter(sb, "actor.stem.color", "128,128,128,128", NULL);
+    sqd_layout_set_presentation_parameter(sb, "noteref.stem.color", "100,100,100,128", NULL);
+
+    sqd_layout_set_presentation_parameter(sb, "actor-region.fill.color", "255,127,80,100", NULL);
+    sqd_layout_set_presentation_parameter(sb, "box-region.fill.color", "205,92,92,100", NULL);
 
 }
 
@@ -1794,12 +1798,15 @@ sqd_layout_draw_events( SQDLayout *sb )
         {
             Event = Element->data;
 
+            // Setup the parameters
+            sqd_layout_use_event_presentation(sb, Event->hdr.ClassStr);
+
             // Calculate the arrow length so that available space for text layout can be calculated.
             switch ( Event->ArrowDir )
             {
                 case ARROWDIR_EXTERNAL_TO:
 
-                    cairo_set_source_rgb (priv->cr, 0, 0, 0);
+                    cairo_set_source_rgba( priv->cr, priv->StemColor.Red, priv->StemColor.Green, priv->StemColor.Blue, priv->StemColor.Alpha);
 
                     // Draw the Stem
                     cairo_move_to (priv->cr, Event->StemBox.Start, Event->StemBox.Top + (priv->LineWidth/2.0));
@@ -1816,7 +1823,7 @@ sqd_layout_draw_events( SQDLayout *sb )
 
                 case ARROWDIR_EXTERNAL_FROM:
 
-                    cairo_set_source_rgb (priv->cr, 0, 0, 0);
+                    cairo_set_source_rgba( priv->cr, priv->StemColor.Red, priv->StemColor.Green, priv->StemColor.Blue, priv->StemColor.Alpha);
 
                     // Draw the Stem
                     cairo_move_to (priv->cr, Event->StemBox.Start, Event->StemBox.Top + (priv->LineWidth/2.0));
@@ -1833,7 +1840,7 @@ sqd_layout_draw_events( SQDLayout *sb )
 
                 case ARROWDIR_STEP:
 
-                    cairo_set_source_rgb (priv->cr, 0, 0, 0);
+                    cairo_set_source_rgba( priv->cr, priv->StemColor.Red, priv->StemColor.Green, priv->StemColor.Blue, priv->StemColor.Alpha);
                   
                     // Draw the Stem
                     cairo_move_to (priv->cr, Event->StemBox.Start, Event->StemBox.Top + (priv->LineWidth/2.0));
@@ -1854,7 +1861,7 @@ sqd_layout_draw_events( SQDLayout *sb )
 
                 case ARROWDIR_LEFT_TO_RIGHT:
 
-                    cairo_set_source_rgb (priv->cr, 0, 0, 0);
+                    cairo_set_source_rgba( priv->cr, priv->StemColor.Red, priv->StemColor.Green, priv->StemColor.Blue, priv->StemColor.Alpha);
 
                     // Draw the Stem
                     cairo_move_to (priv->cr, Event->StemBox.Start, Event->StemBox.Top + (priv->LineWidth/2.0));
@@ -1872,7 +1879,7 @@ sqd_layout_draw_events( SQDLayout *sb )
 
                 case ARROWDIR_RIGHT_TO_LEFT:
 
-                    cairo_set_source_rgb (priv->cr, 0, 0, 0);
+                    cairo_set_source_rgba( priv->cr, priv->StemColor.Red, priv->StemColor.Green, priv->StemColor.Blue, priv->StemColor.Alpha);
 
                     // Draw the Stem
                     cairo_move_to (priv->cr, Event->StemBox.Start, Event->StemBox.Top + (priv->LineWidth/2.0));
@@ -1890,6 +1897,8 @@ sqd_layout_draw_events( SQDLayout *sb )
 
             }
  
+            cairo_set_source_rgba( priv->cr, priv->TextColor.Red, priv->TextColor.Green, priv->TextColor.Blue, priv->TextColor.Alpha);
+
             if( Event->UpperText.Str )
             {
                 cairo_move_to (priv->cr, Event->UpperTextBox.Start, Event->UpperTextBox.Top);
@@ -1903,6 +1912,9 @@ sqd_layout_draw_events( SQDLayout *sb )
 
                 sqd_layout_draw_text( sb, &Event->LowerText, Event->LowerText.Width );
             }
+
+            // Switch back to the default presentation
+            sqd_layout_use_default_presentation(sb);
            
             Element = g_list_next(Element);
         } // Event Layout Loop
@@ -1924,8 +1936,11 @@ sqd_layout_draw_aregions( SQDLayout *sb )
     {
         AReg = g_ptr_array_index(priv->ActorRegions, i);
 
+        // Set the presentation
+        sqd_layout_use_aregion_presentation(sb, AReg->hdr.ClassStr);
+
         // Draw the Text bounding box.
-        cairo_set_source_rgba (priv->cr, 0.0, 0.5, 0.0, 0.5);
+        cairo_set_source_rgba( priv->cr, priv->FillColor.Red, priv->FillColor.Green, priv->FillColor.Blue, priv->FillColor.Alpha );
 
 //        sqd_layout_draw_rounded_rec(sb, AReg->BoundsBox.Start, AReg->BoundsBox.Top, 
 //                            (AReg->BoundsBox.End - AReg->BoundsBox.Start),
@@ -1937,7 +1952,8 @@ sqd_layout_draw_aregions( SQDLayout *sb )
 
         cairo_fill (priv->cr);
 
-        cairo_set_source_rgb (priv->cr, 0, 0, 0);
+        // Back to the defualt presentation
+        sqd_layout_use_default_presentation(sb);
     }
 
 }
@@ -1956,8 +1972,11 @@ sqd_layout_draw_bregions( SQDLayout *sb )
     {
         BReg = g_ptr_array_index(priv->BoxRegions, i);
 
+        // Set the presentation
+        sqd_layout_use_bregion_presentation(sb, BReg->hdr.ClassStr);
+
         // Draw the Text bounding box.
-        cairo_set_source_rgba (priv->cr, 0.0, 0.0, 0.5, 0.5);
+        cairo_set_source_rgba( priv->cr, priv->FillColor.Red, priv->FillColor.Green, priv->FillColor.Blue, priv->FillColor.Alpha );
 
         sqd_layout_draw_rounded_rec(sb, BReg->BoundsBox.Start, BReg->BoundsBox.Top, 
                             (BReg->BoundsBox.End - BReg->BoundsBox.Start),
@@ -1969,7 +1988,8 @@ sqd_layout_draw_bregions( SQDLayout *sb )
 
         cairo_fill (priv->cr);
 
-        cairo_set_source_rgb (priv->cr, 0, 0, 0);
+        // Back to the defualt presentation
+        sqd_layout_use_default_presentation(sb);
     }
 
 }
@@ -1992,8 +2012,11 @@ sqd_layout_draw_notes( SQDLayout *sb )
     {
         Note = g_ptr_array_index(priv->Notes, i);
 
+        // Setup the parameters
+        sqd_layout_use_note_presentation(sb, Note->hdr.ClassStr);
+
         // Draw the Text bounding box.
-        cairo_set_source_rgb (priv->cr, 0.95, 0.7, 0.95);
+        cairo_set_source_rgba( priv->cr, priv->FillColor.Red, priv->FillColor.Green, priv->FillColor.Blue, priv->FillColor.Alpha);
 
         cairo_rectangle(priv->cr, Note->BoundsBox.Start, Note->BoundsBox.Top, 
                             (Note->BoundsBox.End - Note->BoundsBox.Start),
@@ -2002,14 +2025,15 @@ sqd_layout_draw_notes( SQDLayout *sb )
         cairo_fill (priv->cr);
 
 
-        // Draw the Actor Title
-        // Center it over the Stem
-        cairo_set_source_rgb (priv->cr, 0, 0, 0);
+        // Draw the Note Text
+        cairo_set_source_rgba( priv->cr, priv->TextColor.Red, priv->TextColor.Green, priv->TextColor.Blue, priv->TextColor.Alpha);
 
         cairo_move_to (priv->cr, (Note->BoundsBox.Start + priv->TextPad), (Note->BoundsBox.Top + priv->TextPad));
 
         sqd_layout_draw_text( sb, &Note->Text, NoteTextWidth );
-     
+
+        // Back to the default parameters
+        sqd_layout_use_default_presentation(sb);     
     }
 
 }
@@ -2041,9 +2065,11 @@ sqd_layout_draw_note_references( SQDLayout *sb )
         if( Note->ReferenceType == NOTE_REFTYPE_NONE )
             continue;
 
+        // Setup the parameters
+        sqd_layout_use_noteref_presentation(sb, Note->hdr.ClassStr);
+
         // Setup to draw the reference line.
-        cairo_save(priv->cr);
-        cairo_set_source_rgba (priv->cr, 0.6, 0.6, 0.6, 0.6);
+        cairo_set_source_rgba (priv->cr, priv->StemColor.Red, priv->StemColor.Green, priv->StemColor.Blue, priv->StemColor.Alpha);
         cairo_set_line_cap  (priv->cr, CAIRO_LINE_CAP_ROUND);
         cairo_set_dash (priv->cr, dashes, ndash, offset);
 
@@ -2055,8 +2081,8 @@ sqd_layout_draw_note_references( SQDLayout *sb )
         cairo_arc(priv->cr, Note->RefLastStart, Note->RefLastTop, 2*priv->LineWidth, 0.0, 2*M_PI );
         cairo_fill(priv->cr);
 
-        cairo_restore(priv->cr);
-
+        // Back to the default parameters
+        sqd_layout_use_default_presentation(sb);     
     }
 
 }
