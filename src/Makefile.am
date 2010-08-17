@@ -20,7 +20,7 @@ endif
 # testing executables
 bin_PROGRAMS = seqdraw 
 
-seqdraw_SOURCES = seqdraw.c sqd-layout.c
+seqdraw_SOURCES = seqdraw.c sqd-layout.c sqd-util.c
 
 seqdraw_CFLAGS = $(REQMOD_CFLAGS) 
 seqdraw_LDADD = $(REQMOD_LIBS) 
