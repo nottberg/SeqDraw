@@ -171,6 +171,7 @@ parse_actor_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
 		{
             xmlChar           *idStr;
             xmlChar           *nameStr;
+            xmlChar           *classStr;
 
 		    // Get a pointer to the current node.
 		    FNode = nodeset->nodeTab[NodeIndx];
@@ -182,12 +183,14 @@ parse_actor_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
                 return TRUE;
             }
 
-            nameStr = xmlGetProp(FNode,"name");
+            nameStr  = xmlGetProp(FNode, "name");
+            classStr = xmlGetProp(FNode, "class");
 		
-            sqd_layout_add_actor(SL, idStr, NodeIndx, nameStr);
+            sqd_layout_add_actor(SL, idStr, classStr, NodeIndx, nameStr);
 
-            if(idStr) xmlFree(idStr);
-            if(nameStr) xmlFree(nameStr);
+            if(idStr)    xmlFree(idStr);
+            if(nameStr)  xmlFree(nameStr);
+            if(classStr) xmlFree(classStr);
 		}
 
         xmlFree(xpathlist);
@@ -234,6 +237,7 @@ parse_event_slot_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, guin
             xmlChar           *endActor    = NULL;
             xmlChar           *topLabel    = NULL;
             xmlChar           *bottomLabel = NULL;
+            xmlChar           *classStr    = NULL;
 
 		    // Get a pointer to the current node.
 		    FNode = nodeset->nodeTab[NodeIndx];
@@ -245,6 +249,8 @@ parse_event_slot_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, guin
                 g_error("Event descriptions require a id property.\n");
                 return TRUE;
             }
+
+            classStr = xmlGetProp(FNode,"classStr");
 
             // Determine the type of event being dealt with
             if( g_strcmp0(FNode->name, "event") == 0 )
@@ -269,7 +275,7 @@ parse_event_slot_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, guin
                 topLabel = xmlGetProp(FNode,"top-label");
                 bottomLabel = xmlGetProp(FNode,"bottom-label");
 		
-                sqd_layout_add_event(SL, idStr, slotIndex, startActor, endActor, topLabel, bottomLabel);
+                sqd_layout_add_event(SL, idStr, classStr, slotIndex, startActor, endActor, topLabel, bottomLabel);
 
             }
             else if( g_strcmp0(FNode->name, "step-event") == 0 )
@@ -284,7 +290,7 @@ parse_event_slot_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, guin
 
                 topLabel = xmlGetProp(FNode,"label");
 
-                sqd_layout_add_step_event(SL, idStr, slotIndex, startActor, topLabel);
+                sqd_layout_add_step_event(SL, idStr, classStr, slotIndex, startActor, topLabel);
             }
             else if( g_strcmp0(FNode->name, "ext-to-event") == 0 )
             {
@@ -298,7 +304,7 @@ parse_event_slot_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, guin
 
                 topLabel = xmlGetProp(FNode,"label");
 
-                sqd_layout_add_external_event(SL, idStr, slotIndex, startActor, topLabel, FALSE);
+                sqd_layout_add_external_event(SL, idStr, classStr, slotIndex, startActor, topLabel, FALSE);
             }
             else if( g_strcmp0(FNode->name, "ext-from-event") == 0 )
             {
@@ -312,7 +318,7 @@ parse_event_slot_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, guin
 
                 topLabel = xmlGetProp(FNode,"label");
 
-                sqd_layout_add_external_event(SL, idStr, slotIndex, startActor, topLabel, TRUE);
+                sqd_layout_add_external_event(SL, idStr, classStr, slotIndex, startActor, topLabel, TRUE);
             }
 
             // Check for storage that needs to be freed.
@@ -321,6 +327,8 @@ parse_event_slot_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, guin
             if(endActor)    xmlFree(endActor);
             if(topLabel)    xmlFree(topLabel);
             if(bottomLabel) xmlFree(bottomLabel);
+            if(classStr)    xmlFree(classStr);
+
 		}
 
         xmlFree(xpathlist);
@@ -414,6 +422,7 @@ parse_actor_region_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
             xmlChar           *RefId;
             xmlChar           *StartEvent;
             xmlChar           *EndEvent;
+            xmlChar           *classStr;
 
 		    // Get a pointer to the current node.
 		    FNode = nodeset->nodeTab[NodeIndx];
@@ -443,12 +452,16 @@ parse_actor_region_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
                 return TRUE;
             }
 
-            sqd_layout_add_actor_region(SL, idStr, RefId, StartEvent, EndEvent);
+            classStr = xmlGetProp(FNode,"class");
+
+            sqd_layout_add_actor_region(SL, idStr, classStr, RefId, StartEvent, EndEvent);
 
             if(idStr)      xmlFree(idStr);
             if(RefId)      xmlFree(RefId);
             if(StartEvent) xmlFree(StartEvent);
             if(EndEvent)   xmlFree(EndEvent);
+            if(classStr)   xmlFree(classStr);
+
 		}
 
         xmlFree(xpathlist);
@@ -496,6 +509,7 @@ parse_box_region_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
             xmlChar           *EndActor;
             xmlChar           *StartEvent;
             xmlChar           *EndEvent;
+            xmlChar           *classStr;
 
 		    // Get a pointer to the current node.
 		    FNode = nodeset->nodeTab[NodeIndx];
@@ -531,13 +545,16 @@ parse_box_region_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
                 return TRUE;
             }
 
-            sqd_layout_add_box_region(SL, idStr, StartActor, EndActor, StartEvent, EndEvent);
+            classStr = xmlGetProp(FNode,"class");
+
+            sqd_layout_add_box_region(SL, idStr, classStr, StartActor, EndActor, StartEvent, EndEvent);
 
             if(idStr)      xmlFree(idStr);
             if(StartActor) xmlFree(StartActor);
             if(EndActor)   xmlFree(EndActor);
             if(StartEvent) xmlFree(StartEvent);
             if(EndEvent)   xmlFree(EndEvent);
+            if(classStr)   xmlFree(classStr);
 		}
 
         xmlFree(xpathlist);
@@ -590,6 +607,7 @@ parse_note_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
             xmlChar           *RefType;
             xmlChar           *RefId;
             xmlChar           *NoteStr;
+            xmlChar           *classStr;
             guint              RefTypeValue;
 
 		    // Get a pointer to the current node.
@@ -643,16 +661,141 @@ parse_note_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
                     }
                 break;
             }
-    
+
+            classStr = xmlGetProp(FNode,"class");    
+
             NoteStr = xmlNodeGetContent(FNode);
 		    normalize_content_str(NoteStr);
 
-            sqd_layout_add_note(SL, idStr, NodeIndx, RefTypeValue, RefId, NoteStr);
+            sqd_layout_add_note(SL, idStr, classStr, NodeIndx, RefTypeValue, RefId, NoteStr);
 
-            if(idStr) xmlFree(idStr);
-            if(RefType) xmlFree(RefType);
-            if(RefId) xmlFree(RefId);
-            if(NoteStr) xmlFree(NoteStr);
+            if(idStr)    xmlFree(idStr);
+            if(RefType)  xmlFree(RefType);
+            if(RefId)    xmlFree(RefId);
+            if(NoteStr)  xmlFree(NoteStr);
+            if(classStr) xmlFree(classStr);
+		}
+
+        xmlFree(xpathlist);
+    }
+
+	// Free up the libxml structures.
+	xmlXPathFreeContext( XPath );    
+}
+
+parse_present_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode, gchar *classStr )
+{
+    xmlXPathContextPtr XPath;       
+    xmlChar           *idStr;
+    xmlNodeSetPtr      nodeset;  
+	xmlNodePtr         FNode;
+	xmlXPathObjectPtr  xpathlist;
+    guint32            NodeIndx;
+
+	// Build a context which XPath can reference from
+	XPath = xmlXPathNewContext( DocPtr );
+    XPath->node = SeqNode;
+    
+    // Add the namespaces of interest.
+    xmlXPathRegisterNs(XPath, "sqd", "http://nottbergbros.com/seqdraw");
+
+    // Sequence diagram description.
+    // Load Planned test cases from the expected file.
+    // Query for decoder definitions.
+	xpathlist = xmlXPathEvalExpression("sqd:present", XPath);
+
+    g_print( "query: 0x%x, %d\n", xpathlist, xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) );
+
+    // If nodes where found then parse them.
+	if( xpathlist && !xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) )
+	{
+   		nodeset = xpathlist->nodesetval; 
+	    g_print( "present node count: %d\n", nodeset->nodeNr );    
+
+        // Cycle through the decoder specs
+		for (NodeIndx = 0; NodeIndx < nodeset->nodeNr; NodeIndx++)    
+		{
+            xmlChar *nameStr;
+            xmlChar *valueStr;
+
+		    // Get a pointer to the current node.
+		    FNode = nodeset->nodeTab[NodeIndx];
+
+            // Get the name property
+            nameStr = xmlGetProp(FNode,"name");
+            if(nameStr == NULL)
+            {
+                g_error("Present nodes require a name property.\n");
+                return TRUE;
+            }
+
+            // Get the value of the presentation parameter
+            valueStr = xmlNodeGetContent(FNode);
+    	    normalize_content_str(valueStr);
+
+            // Set the presentation parameter.
+    		sqd_layout_set_presentation_parameter(SL, nameStr, valueStr, classStr);
+
+            // Cleanup
+            if(nameStr) xmlFree(idStr);
+            if(valueStr) xmlFree(nameStr);
+		}
+
+        xmlFree(xpathlist);
+    }
+
+	// Free up the libxml structures.
+	xmlXPathFreeContext( XPath );    
+}
+
+parse_class_list( SQDLayout *SL, xmlDocPtr DocPtr, xmlNodePtr SeqNode )
+{
+    xmlXPathContextPtr XPath;       
+    xmlChar           *idStr;
+    xmlNodeSetPtr      nodeset;  
+	xmlNodePtr         FNode;
+	xmlXPathObjectPtr  xpathlist;
+    guint32            NodeIndx;
+
+	// Build a context which XPath can reference from
+	XPath = xmlXPathNewContext( DocPtr );
+    XPath->node = SeqNode;
+    
+    // Add the namespaces of interest.
+    xmlXPathRegisterNs(XPath, "sqd", "http://nottbergbros.com/seqdraw");
+
+    // Sequence diagram description.
+    // Load Planned test cases from the expected file.
+    // Query for decoder definitions.
+	xpathlist = xmlXPathEvalExpression("sqd:class", XPath);
+
+    g_print( "query: 0x%x, %d\n", xpathlist, xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) );
+
+    // If nodes where found then parse them.
+	if( xpathlist && !xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) )
+	{
+   		nodeset = xpathlist->nodesetval; 
+	    g_print( "class node count: %d\n", nodeset->nodeNr );    
+
+        // Cycle through the decoder specs
+		for (NodeIndx = 0; NodeIndx < nodeset->nodeNr; NodeIndx++)    
+		{
+            xmlChar           *classStr;
+
+		    // Get a pointer to the current node.
+		    FNode = nodeset->nodeTab[NodeIndx];
+
+            classStr = xmlGetProp(FNode,"name");
+            if(classStr == NULL)
+            {
+                g_error("Presentation class nodes require a name property.\n");
+                return TRUE;
+            }
+
+            // Sub call to parse the present nodes in the context of this class.
+            parse_present_list( SL, DocPtr, FNode, classStr );
+
+            if(classStr) xmlFree(classStr);
 		}
 
         xmlFree(xpathlist);
@@ -751,6 +894,37 @@ main (int argc, char *argv[])
     // Sequence diagram description.
     // Load Planned test cases from the expected file.
     // Query for decoder definitions.
+	xpathlist = xmlXPathEvalExpression("sqd:presentation", XPath);
+
+    g_print( "query: 0x%x, %d\n", xpathlist, xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) );
+
+    // If nodes where found then parse them.
+	if( xpathlist )
+	{
+   		nodeset = xpathlist->nodesetval; 
+	    g_print( "presentation node count: %d\n", nodeset->nodeNr );    
+
+        if( nodeset->nodeNr > 1 )
+        {
+            g_error("Only a single presentation node per input file is currently supported.\n");
+            return;
+        }
+
+        if( nodeset->nodeNr )
+        {
+            // Parse the name and description.
+            parse_present_list(SL, SeqDoc, nodeset->nodeTab[0], NULL);
+
+            // Parse the actor nodes.
+            parse_class_list( SL, SeqDoc, nodeset->nodeTab[0]);
+        }
+
+        xmlFree(xpathlist);
+    }
+
+    // Sequence diagram description.
+    // Load Planned test cases from the expected file.
+    // Query for decoder definitions.
 	xpathlist = xmlXPathEvalExpression("sqd:sequence", XPath);
 
     g_print( "query: 0x%x, %d\n", xpathlist, xmlXPathNodeSetIsEmpty(xpathlist->nodesetval) );
@@ -796,22 +970,6 @@ main (int argc, char *argv[])
 
 	// Free up the libxml structures.
 	xmlXPathFreeContext( XPath );    
-
-    //sqd_layout_add_actor(SL, "host", 0, "SLI-Host");
-    //sqd_layout_add_actor(SL, "firmware", 1, "Firmware");
-    //sqd_layout_add_actor(SL, "wire", 2, "Wire");
-    //sqd_layout_add_actor(SL, "hdd", 3, "HDD");
-
-    //sqd_layout_add_event(SL, "ev1", 0, "host", "firmware", "Bob", NULL);
-    //sqd_layout_add_event(SL, "ev2", 1, "host", "port", NULL, NULL);
-    //sqd_layout_add_event(SL, "ev3", 2, "port", "dma", NULL, NULL);
-    //sqd_layout_add_event(SL, "ev4", 3, "port", "host", "Rosita", "Fred");
-    //sqd_layout_add_event(SL, "ev5", 4, "host", "firmware", NULL, NULL);
-    //sqd_layout_add_event(SL, "ev6", 4, "port", "dma", NULL, "Ted");
-
-    //sqd_layout_add_note(SL, "note1", 0, NOTE_REFTYPE_EVENT_START, "e2", "Test Note 1");
-    //sqd_layout_add_note(SL, "note2", 1, NOTE_REFTYPE_ACTOR, "firmware", "Kevin likes to put his notes over in a column on the side of the sequence diagram and then draw a line between the note and the event of interest.");
-    //sqd_layout_add_note(SL, "note3", 2, NOTE_REFTYPE_EVENT_MIDDLE, "e4", "Test Note 3");
 
     // Cleanup
     xmlFreeDoc( SeqDoc );

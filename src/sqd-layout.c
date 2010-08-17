@@ -438,6 +438,7 @@ sqd_layout_init (SQDLayout *sb)
     sqd_layout_set_presentation_parameter(sb, "font", "Times 10", NULL);
     sqd_layout_set_presentation_parameter(sb, "description.font", "Courier 8", NULL);
     sqd_layout_set_presentation_parameter(sb, "title.font", "Impact 10", NULL);
+    sqd_layout_set_presentation_parameter(sb, "note.font", "Times 6", NULL);
 
     //sqd_layout_set_presentation_parameter(sb, "text.color", "0,0,0,255", NULL);
     sqd_layout_set_presentation_parameter(sb, "text.color", "95,158,160,255", NULL);
@@ -2292,7 +2293,7 @@ sqd_layout_add_event_common( SQDLayout *sb, SQD_EVENT *Event)
 }
 
 gboolean
-sqd_layout_add_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *StartActorId, gchar *EndActorId, char *TopLabel, char *BottomLabel)
+sqd_layout_add_event( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int SlotIndex, gchar *StartActorId, gchar *EndActorId, char *TopLabel, char *BottomLabel)
 {
 	SQDLayoutPrivate *priv;
     SQD_EVENT        *TmpEvent;
@@ -2345,7 +2346,7 @@ sqd_layout_add_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *StartAc
     TmpEvent->hdr.Index         = SlotIndex;
     TmpEvent->hdr.Type          = SDOBJ_EVENT;
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
-    TmpEvent->hdr.ClassStr      = NULL;
+    TmpEvent->hdr.ClassStr      = ClassStr ? g_strdup(ClassStr):NULL;
 
     if( TmpEvent->hdr.Index > priv->MaxEventIndex )
         priv->MaxEventIndex = TmpEvent->hdr.Index;
@@ -2369,7 +2370,7 @@ sqd_layout_add_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *StartAc
 }
 
 gboolean
-sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *ActorId, gchar *Label)
+sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int SlotIndex, gchar *ActorId, gchar *Label)
 {
 	SQDLayoutPrivate *priv;
     SQD_EVENT        *TmpEvent;
@@ -2408,7 +2409,7 @@ sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *Ac
     TmpEvent->hdr.Index         = SlotIndex;
     TmpEvent->hdr.Type          = SDOBJ_EVENT;
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
-    TmpEvent->hdr.ClassStr      = NULL;
+    TmpEvent->hdr.ClassStr      = ClassStr ? g_strdup(ClassStr):NULL;
 
     if( TmpEvent->hdr.Index > priv->MaxEventIndex )
         priv->MaxEventIndex = TmpEvent->hdr.Index;
@@ -2426,7 +2427,7 @@ sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *Ac
 }
 
 gboolean
-sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar *ActorId, gchar *Label, gboolean FromFlag )
+sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int SlotIndex, gchar *ActorId, gchar *Label, gboolean FromFlag )
 {
 	SQDLayoutPrivate *priv;
     SQD_EVENT        *TmpEvent;
@@ -2465,7 +2466,7 @@ sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar
     TmpEvent->hdr.Index         = SlotIndex;
     TmpEvent->hdr.Type          = SDOBJ_EVENT;
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
-    TmpEvent->hdr.ClassStr      = NULL;
+    TmpEvent->hdr.ClassStr      = ClassStr ? g_strdup(ClassStr):NULL;
 
     if( TmpEvent->hdr.Index > priv->MaxEventIndex )
         priv->MaxEventIndex = TmpEvent->hdr.Index;
@@ -2486,7 +2487,7 @@ sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, int SlotIndex, gchar
 }
 
 gboolean
-sqd_layout_add_actor( SQDLayout *sb, gchar *IdStr, int ActorIndex, char *ActorTitle)
+sqd_layout_add_actor( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int ActorIndex, gchar *ActorTitle )
 {
 	SQDLayoutPrivate *priv;
     SQD_ACTOR *TmpActor;
@@ -2505,7 +2506,7 @@ sqd_layout_add_actor( SQDLayout *sb, gchar *IdStr, int ActorIndex, char *ActorTi
     TmpActor->hdr.Index           = ActorIndex;
     TmpActor->hdr.Type            = SDOBJ_ACTOR;
     TmpActor->hdr.IdStr           = g_strdup(IdStr);
-    TmpActor->hdr.ClassStr        = NULL;
+    TmpActor->hdr.ClassStr        = ClassStr ? g_strdup(ClassStr):NULL;
 
     if( TmpActor->hdr.Index > priv->MaxActorIndex )
         priv->MaxActorIndex = TmpActor->hdr.Index;
@@ -2545,7 +2546,7 @@ sqd_layout_add_actor( SQDLayout *sb, gchar *IdStr, int ActorIndex, char *ActorTi
 }
 
 gboolean
-sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar *StartEvent, gchar *EndEvent )
+sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ClassStr, gchar *ActorId, gchar *StartEvent, gchar *EndEvent )
 {
 	SQDLayoutPrivate *priv;
     SQD_ACTOR_REGION *TmpRegion;
@@ -2564,7 +2565,7 @@ sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar
     TmpRegion->hdr.Index    = 0;
     TmpRegion->hdr.Type     = SDOBJ_AREGION;
     TmpRegion->hdr.IdStr    = g_strdup(IdStr);
-    TmpRegion->hdr.ClassStr = NULL;
+    TmpRegion->hdr.ClassStr = ClassStr ? g_strdup(ClassStr):NULL;;
 
     TmpRegion->ActorRef = g_hash_table_lookup(priv->IdTable, ActorId);
     if( (TmpRegion->ActorRef == NULL) || (TmpRegion->ActorRef->hdr.Type != SDOBJ_ACTOR) )
@@ -2600,7 +2601,7 @@ sqd_layout_add_actor_region(  SQDLayout *sb, gchar *IdStr, gchar *ActorId, gchar
 }
 
 gboolean
-sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar *EndActor, gchar *StartEvent, gchar *EndEvent)
+sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, gchar *StartActor, gchar *EndActor, gchar *StartEvent, gchar *EndEvent)
 {
 	SQDLayoutPrivate *priv;
     SQD_BOX_REGION *TmpRegion;
@@ -2619,7 +2620,7 @@ sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar
     TmpRegion->hdr.Index    = 0;
     TmpRegion->hdr.Type     = SDOBJ_BREGION;
     TmpRegion->hdr.IdStr    = g_strdup(IdStr);
-    TmpRegion->hdr.ClassStr = NULL;
+    TmpRegion->hdr.ClassStr = ClassStr ? g_strdup(ClassStr):NULL;;
 
     TmpRegion->SActorRef = g_hash_table_lookup(priv->IdTable, StartActor);
     if( (TmpRegion->SActorRef == NULL) || (TmpRegion->SActorRef->hdr.Type != SDOBJ_ACTOR) )
@@ -2662,7 +2663,7 @@ sqd_layout_add_box_region( SQDLayout *sb, gchar *IdStr, gchar *StartActor, gchar
 }
 
 gboolean
-sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, int NoteIndex, int NoteType, gchar *RefId, char *NoteText)
+sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int NoteIndex, int NoteType, gchar *RefId, char *NoteText)
 {
 	SQDLayoutPrivate *priv;
     SQD_NOTE *TmpNote;
@@ -2736,7 +2737,7 @@ sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, int NoteIndex, int NoteType, g
     TmpNote->hdr.Index      = NoteIndex;
     TmpNote->hdr.Type       = SDOBJ_NOTE;
     TmpNote->hdr.IdStr      = g_strdup(IdStr);
-    TmpNote->hdr.ClassStr   = NULL;
+    TmpNote->hdr.ClassStr   = ClassStr ? g_strdup(ClassStr):NULL;;
 
     if( TmpNote->hdr.Index > priv->MaxNoteIndex )
         priv->MaxNoteIndex = TmpNote->hdr.Index;

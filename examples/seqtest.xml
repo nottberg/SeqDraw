@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <sqd:seqdraw xmlns:sqd="http://nottbergbros.com/seqdraw">
-    <sqd:config>
-    </sqd:config>
+    <sqd:presentation>
+        <sqd:present name="fill.color">255,105,180,255</sqd:present>
+        <sqd:class name="hardware">
+            <sqd:present name="actor.fill.color">30,144,255,255</sqd:present>
+            <sqd:present name="actor.font">Impact 6</sqd:present>
+        </sqd:class>
+    </sqd:presentation>
     <sqd:sequence id="tc0044">
         <sqd:name>SeqDraw Test Diagram -- Example 1</sqd:name>
         <sqd:description>
@@ -12,8 +17,8 @@
         <sqd:actor-list>
             <sqd:actor id="host" name="Host"/>
             <sqd:actor id="firmware" name="Firmware"/>
-            <sqd:actor id="dma" name="DMA"/>
-            <sqd:actor id="port" name="Port"/>
+            <sqd:actor id="dma" name="DMA" class="hardware"/>
+            <sqd:actor id="port" name="Port" class="hardware"/>
         </sqd:actor-list>
         <sqd:event-list>
             <sqd:slot>
