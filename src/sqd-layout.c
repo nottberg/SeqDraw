@@ -289,6 +289,7 @@ struct _SQDLayoutPrivate
     // Presentation Parameters 
     gchar       *FontStr;
 
+    SQD_COLOR   BGColor;
     SQD_COLOR   TextColor;
     SQD_COLOR   LineColor;
     SQD_COLOR   FillColor;
@@ -444,6 +445,7 @@ sqd_layout_init (SQDLayout *sb)
     sqd_layout_set_presentation_parameter(sb, "text.color", "95,158,160,255", NULL);
     sqd_layout_set_presentation_parameter(sb, "line.color", "0,0,0,255", NULL);
     sqd_layout_set_presentation_parameter(sb, "fill.color", "255,228,196,255", NULL);
+    sqd_layout_set_presentation_parameter(sb, "background.color", "255,255,255,255", NULL);
 
     sqd_layout_set_presentation_parameter(sb, "actor.stem.color", "128,128,128,128", NULL);
     sqd_layout_set_presentation_parameter(sb, "noteref.stem.color", "100,100,100,128", NULL);
@@ -567,6 +569,9 @@ sqd_layout_use_default_presentation( SQDLayout *sb )
     priv->FontStr = sqd_layout_get_pparam( sb, "font", NULL );
 
     // Process a color strings.
+    TmpStr = sqd_layout_get_pparam(sb, "background.color", NULL);
+    sqd_layout_process_color_str(sb, TmpStr, &priv->BGColor);
+
     TmpStr = sqd_layout_get_pparam(sb, "text.color", NULL);
     sqd_layout_process_color_str(sb, TmpStr, &priv->TextColor);
 
@@ -1551,6 +1556,9 @@ sqd_layout_arrange_diagram( SQDLayout *sb )
 
 	priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
+    // Start with the default presentation.
+    sqd_layout_use_default_presentation(sb);
+
     // Start as if there isn't a title.
     priv->TitleBox.Start   = priv->Margin;
     priv->TitleBox.End     = priv->Width - priv->Margin;
@@ -2095,9 +2103,20 @@ sqd_layout_draw_diagram( SQDLayout *sb )
 
 	priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
-    cairo_set_line_width (priv->cr, priv->LineWidth);
-    cairo_set_source_rgb (priv->cr, 0, 0, 0);
+    // Start with the default presentation.
+    sqd_layout_use_default_presentation(sb);
 
+    // Bring line size into account.
+    cairo_set_line_width (priv->cr, priv->LineWidth);
+
+    // Draw a background so that it isn't transparent.
+    cairo_set_source_rgba(priv->cr, priv->BGColor.Red, priv->BGColor.Green, priv->BGColor.Blue, priv->BGColor.Alpha);
+
+    cairo_rectangle(priv->cr, 0, 0, priv->Width, priv->Height); 
+
+    cairo_fill (priv->cr);
+
+    // Take care of any title bar.
     if( priv->Title.Str )
     {
         // Setup the parameters for the title bar
