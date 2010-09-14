@@ -993,7 +993,7 @@ sqd_layout_arrange_notes( SQDLayout *sb )
     NoteTextWidth = priv->NoteBoxWidth - (2 * priv->TextPad);
 
     // Determine the height of the Note text.
-    for (i = 0; i <= priv->MaxNoteIndex; i++)
+    for (i = 0; i < priv->MaxNoteIndex; i++)
     {
         Note = g_ptr_array_index(priv->Notes, i);
 
@@ -1043,7 +1043,7 @@ sqd_layout_arrange_events( SQDLayout *sb )
     EventTop   = priv->SeqBox.Top;
 
     // Cycle through the event layers in sequencial order to layout each one.
-    for (i = 0; i <= priv->MaxEventIndex; i++)
+    for (i = 0; i < priv->MaxEventIndex; i++)
     {
         Layer = &g_array_index(priv->EventLayers, SQD_EVENT_LAYER, i);
 
@@ -1503,7 +1503,7 @@ sqd_layout_arrange_notes_references( SQDLayout *sb )
     NoteTextWidth = priv->NoteBoxWidth - (2 * priv->TextPad);
 
     // Determine the height of the Note text.
-    for (i = 0; i <= priv->MaxNoteIndex; i++)
+    for (i = 0; i < priv->MaxNoteIndex; i++)
     {
         Note = g_ptr_array_index(priv->Notes, i);
 
@@ -1797,7 +1797,7 @@ sqd_layout_draw_events( SQDLayout *sb )
 	priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
     // Cycle through the event layers in sequencial order to layout each one.
-    for (i = 0; i <= priv->MaxEventIndex; i++)
+    for (i = 0; i < priv->MaxEventIndex; i++)
     {
         Layer = &g_array_index(priv->EventLayers, SQD_EVENT_LAYER, i);
 
@@ -1941,7 +1941,7 @@ sqd_layout_draw_aregions( SQDLayout *sb )
 	priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
     // Draw each actor region box
-    for (i = 0; i <= priv->ActorRegions->len; i++)
+    for (i = 0; i < priv->ActorRegions->len; i++)
     {
         AReg = g_ptr_array_index(priv->ActorRegions, i);
 
@@ -1977,7 +1977,7 @@ sqd_layout_draw_bregions( SQDLayout *sb )
 	priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
     // Draw each box region box
-    for (i = 0; i <= priv->BoxRegions->len; i++)
+    for (i = 0; i < priv->BoxRegions->len; i++)
     {
         BReg = g_ptr_array_index(priv->BoxRegions, i);
 
@@ -2017,7 +2017,7 @@ sqd_layout_draw_notes( SQDLayout *sb )
     NoteTextWidth = priv->NoteBoxWidth - (2 * priv->TextPad);
 
     // Draw each actor
-    for (i = 0; i <= priv->MaxNoteIndex; i++)
+    for (i = 0; i < priv->MaxNoteIndex; i++)
     {
         Note = g_ptr_array_index(priv->Notes, i);
 
@@ -2066,7 +2066,7 @@ sqd_layout_draw_note_references( SQDLayout *sb )
 	priv = SQD_LAYOUT_GET_PRIVATE (sb);
 
     // Draw each reference line
-    for (i = 0; i <= priv->MaxNoteIndex; i++)
+    for (i = 0; i < priv->MaxNoteIndex; i++)
     {
         Note = g_ptr_array_index(priv->Notes, i);
 
@@ -2367,8 +2367,8 @@ sqd_layout_add_event( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int SlotInde
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
     TmpEvent->hdr.ClassStr      = ClassStr ? g_strdup(ClassStr):NULL;
 
-    if( TmpEvent->hdr.Index > priv->MaxEventIndex )
-        priv->MaxEventIndex = TmpEvent->hdr.Index;
+    if( TmpEvent->hdr.Index >= priv->MaxEventIndex )
+        priv->MaxEventIndex = TmpEvent->hdr.Index+1;
 
     TmpEvent->StartActorIndx    = SAPtr->hdr.Index;
     TmpEvent->EndActorIndx      = EAPtr->hdr.Index;
@@ -2430,8 +2430,8 @@ sqd_layout_add_step_event( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int Slo
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
     TmpEvent->hdr.ClassStr      = ClassStr ? g_strdup(ClassStr):NULL;
 
-    if( TmpEvent->hdr.Index > priv->MaxEventIndex )
-        priv->MaxEventIndex = TmpEvent->hdr.Index;
+    if( TmpEvent->hdr.Index >= priv->MaxEventIndex )
+        priv->MaxEventIndex = TmpEvent->hdr.Index+1;
 
     TmpEvent->StartActorIndx    = SAPtr->hdr.Index;
     TmpEvent->EndActorIndx      = 0;
@@ -2487,8 +2487,8 @@ sqd_layout_add_external_event( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int
     TmpEvent->hdr.IdStr         = g_strdup(IdStr);
     TmpEvent->hdr.ClassStr      = ClassStr ? g_strdup(ClassStr):NULL;
 
-    if( TmpEvent->hdr.Index > priv->MaxEventIndex )
-        priv->MaxEventIndex = TmpEvent->hdr.Index;
+    if( TmpEvent->hdr.Index >= priv->MaxEventIndex )
+        priv->MaxEventIndex = TmpEvent->hdr.Index+1;
 
     TmpEvent->StartActorIndx    = SAPtr->hdr.Index;
     TmpEvent->EndActorIndx      = 0;
@@ -2758,8 +2758,8 @@ sqd_layout_add_note( SQDLayout *sb, gchar *IdStr, gchar *ClassStr, int NoteIndex
     TmpNote->hdr.IdStr      = g_strdup(IdStr);
     TmpNote->hdr.ClassStr   = ClassStr ? g_strdup(ClassStr):NULL;;
 
-    if( TmpNote->hdr.Index > priv->MaxNoteIndex )
-        priv->MaxNoteIndex = TmpNote->hdr.Index;
+    if( TmpNote->hdr.Index >= priv->MaxNoteIndex )
+        priv->MaxNoteIndex = TmpNote->hdr.Index+1;
 
     TmpNote->Text.Str            = NULL;
     TmpNote->Text.Width          = 0;
